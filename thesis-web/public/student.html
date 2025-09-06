@@ -1,0 +1,31 @@
+<!doctype html><html lang="el"><meta charset="utf-8">
+<title>Φοιτητής/τρια</title>
+<link rel="stylesheet" href="css/styles.css">
+<body>
+<header class="topbar"><h2>Πίνακας Φοιτητή/τριας</h2></header>
+<main class="container">
+<section class="card" style="padding:1rem">
+<h3>Η διπλωματική μου</h3>
+<div id="thesis"></div>
+</section>
+<section class="card" style="padding:1rem;margin-top:1rem">
+<h3>Πρόσκληση μέλους τριμελούς</h3>
+<form id="inviteF">
+<input name="thesis_id" placeholder="thesis_id" required>
+<input name="person_id" placeholder="person_id" required>
+<button class="btn">Πρόσκληση</button>
+</form>
+<p id="inviteMsg"></p>
+</section>
+</main>
+<script type="module">
+import { guardRole, apiPost } from './js/auth.js';
+await guardRole('student');
+document.getElementById('inviteF').addEventListener('submit', async (e)=>{
+e.preventDefault();
+const data = Object.fromEntries(new FormData(e.target).entries());
+const res = await apiPost('/api/committee/invite.php', data);
+document.getElementById('inviteMsg').textContent = res.ok ? 'ΟΚ' : (res.error||'Σφάλμα');
+});
+</script>
+</body></html>

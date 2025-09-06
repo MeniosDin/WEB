@@ -1,0 +1,24 @@
+<!doctype html><html lang="el"><meta charset="utf-8">
+<title>Διδάσκων</title>
+<link rel="stylesheet" href="css/styles.css">
+<body>
+<header class="topbar"><h2>Πίνακας Διδάσκοντα</h2></header>
+<main class="container">
+<section class="card" style="padding:1rem">
+<h3>Τα θέματα μου</h3>
+<div id="topics"></div>
+</section>
+<section class="card" style="padding:1rem;margin-top:1rem">
+<h3>Στατιστικά</h3>
+<canvas id="statsChart"></canvas>
+</section>
+</main>
+<script type="module">
+import { guardRole } from './js/auth.js';
+import { loadTeacherTopics } from './js/teacher.js';
+import { drawTeacherStats } from './js/charts.js';
+await guardRole('teacher');
+await loadTeacherTopics();
+await drawTeacherStats();
+</script>
+</body></html>
