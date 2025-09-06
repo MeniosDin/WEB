@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="el"><head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<link rel="stylesheet" href="./css/styles.css"/>
+<title>Σύστημα Διπλωματικών — Login</title>
+</head><body>
+<div class="container grid" style="min-height:100dvh; place-items:center">
+<div class="card" style="width:min(460px, 100%)">
+<h1>Είσοδος</h1>
+<div class="grid">
+<input id="email" type="email" placeholder="email@upatras.gr"/>
+<input id="password" type="password" placeholder="Κωδικός"/>
+<button class="btn" id="btnLogin">Σύνδεση</button>
+<p id="msg"></p>
+</div>
+</div>
+</div>
+<script type="module">
+import { api } from './js/api.js';
+const b = document.getElementById('btnLogin');
+const msg = document.getElementById('msg');
+b.addEventListener('click', async () => {
+b.disabled = true; msg.textContent = '';
+try {
+const res = await api('/auth/login.php', {email: email.value, password: password.value});
+const role = res.user.role;
+const dest = role==='teacher' ? 'teacher.html' : (role==='student' ? 'student.html' : 'secretariat.html');
+location.href = dest;
+} catch(e){ msg.textContent = e.message || 'Σφάλμα'; }
+b.disabled = false;
+});
+</script>
+</body></html>

@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="el">
+<head>
+  <meta charset="utf-8">
+  <title>Σύστημα Διαχείρισης Διπλωματικών</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <link rel="stylesheet" href="css/styles.css">
+
+  <script type="module">
+    // Έλεγχος αν υπάρχει ενεργό session
+    async function checkSession() {
+      try {
+        const res = await fetch("/THESIS_WEB/api/auth/me.php", { credentials: "include" });
+        const json = await res.json();
+        if (json?.ok && json?.data?.user) {
+          // ήδη συνδεδεμένος → άνοιξε το app shell
+          location.href = "app.html";
+          return;
+        }
+      } catch (e) {
+        console.warn("Session check failed:", e);
+      }
+      // όχι συνδεδεμένος → login
+      location.href = "login.html";
+    }
+    checkSession();
+  </script>
+</head>
+<body>
+  <div class="container">
+    <h1>Σύστημα Διαχείρισης Διπλωματικών</h1>
+    <p>Γίνεται ανακατεύθυνση…</p>
+    <p>Αν δεν μεταφερθείτε, πατήστε <a href="login.html">εδώ</a>.</p>
+  </div>
+</body>
+</html>
