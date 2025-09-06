@@ -1,34 +1,29 @@
-<!doctype html>
-<html lang="el"><head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1"/>
-<link rel="stylesheet" href="./css/styles.css"/>
-<title>Σύστημα Διπλωματικών — Login</title>
-</head><body>
-<div class="container grid" style="min-height:100dvh; place-items:center">
-<div class="card" style="width:min(460px, 100%)">
-<h1>Είσοδος</h1>
-<div class="grid">
-<input id="email" type="email" placeholder="email@upatras.gr"/>
-<input id="password" type="password" placeholder="Κωδικός"/>
-<button class="btn" id="btnLogin">Σύνδεση</button>
-<p id="msg"></p>
-</div>
-</div>
-</div>
+<!doctype html><html lang="el"><meta charset="utf-8">
+<title>Σύνδεση</title>
+<link rel="stylesheet" href="css/styles.css">
+<body>
+<main class="center card">
+<h2>Σύνδεση</h2>
+<form id="f">
+<input name="email" type="email" placeholder="email" required>
+<input name="password" type="password" placeholder="password" required>
+<button class="btn" type="submit">Login</button>
+</form>
+<p id="err" class="error"></p>
+</main>
 <script type="module">
-import { api } from './js/api.js';
-const b = document.getElementById('btnLogin');
-const msg = document.getElementById('msg');
-b.addEventListener('click', async () => {
-b.disabled = true; msg.textContent = '';
-try {
-const res = await api('/auth/login.php', {email: email.value, password: password.value});
-const role = res.user.role;
-const dest = role==='teacher' ? 'teacher.html' : (role==='student' ? 'student.html' : 'secretariat.html');
-location.href = dest;
-} catch(e){ msg.textContent = e.message || 'Σφάλμα'; }
-b.disabled = false;
+import { apiPost, setAuth, me } from './js/auth.js';
+if (await me()) location.replace('app.html');
+document.getElementById('f').addEventListener('submit', async (e)=>{
+e.preventDefault();
+const data = Object.fromEntries(new FormData(e.target).entries());
+const res = await apiPost('../api/auth/login.php', data);
+
+if (!res.ok) return document.getElementById('err').textContent = res.error || 'Σφάλμα';
+setAuth(true);
+const u = await me();
+const m = { teacher:'teacher.html', student:'student.html', secretariat:'secretariat.html' };
+location.replace(m[u.role] || 'app.html');
 });
 </script>
 </body></html>

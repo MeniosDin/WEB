@@ -1,4 +1,4 @@
 <?php
-function must(string $key, array $src): string { if (!isset($src[$key]) || $src[$key]==='') throw new Exception("Missing: $key"); return trim((string)$src[$key]); }
-function email_valid(string $e): bool { return (bool)filter_var($e, FILTER_VALIDATE_EMAIL); }
-?>
+function must($arr, $keys){ foreach($keys as $k) if(!isset($arr[$k]) || $arr[$k]==='') bad("Λείπει: $k"); }
+function assert_enum($v,$allowed,$name){ if(!in_array($v,$allowed,true)) bad("Μη αποδεκτή τιμή: $name"); }
+function parse_datetime($s,$name){ $dt = date_create($s); if(!$dt) bad("Λάθος ημ/νία: $name"); return $dt->format('Y-m-d H:i:s'); }

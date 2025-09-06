@@ -1,52 +1,24 @@
-<!doctype html>
-<div class="container grid">
-<header class="grid-2">
-<div><h1>Πίνακας Διδάσκοντα</h1><p id="welcome"></p></div>
-<div style="text-align:right"><a class="btn" href="login.html">Έξοδος</a></div>
-</header>
-<section class="card">
-<h2>Τα Θέματά μου</h2>
-<div class="grid">
-<div class="grid-2">
-<input id="title" placeholder="Τίτλος θέματος"/>
-<input id="academic_year" placeholder="2024-2025"/>
-</div>
-<textarea id="summary" placeholder="Σύνοψη"></textarea>
-<button class="btn" id="add">Καταχώρηση θέματος</button>
-<div id="topics" class="grid"></div>
-</div>
+<!doctype html><html lang="el"><meta charset="utf-8">
+<title>Διδάσκων</title>
+<link rel="stylesheet" href="css/styles.css">
+<body>
+<header class="topbar"><h2>Πίνακας Διδάσκοντα</h2></header>
+<main class="container">
+<section class="card" style="padding:1rem">
+<h3>Τα θέματα μου</h3>
+<div id="topics"></div>
 </section>
-</div>
+<section class="card" style="padding:1rem;margin-top:1rem">
+<h3>Στατιστικά</h3>
+<canvas id="statsChart"></canvas>
+</section>
+</main>
 <script type="module">
-import { api, me } from './js/api.js';
-const welcome = document.getElementById('welcome');
-const topicsDiv = document.getElementById('topics');
-const addBtn = document.getElementById('add');
-
-
-(async function init(){
-const u = await me(); welcome.textContent = `Καλώς ήλθες, ${u.name}`;
-await loadTopics();
-})();
-
-
-async function loadTopics(){
-topicsDiv.innerHTML = '';
-const rows = await api('/topics/list_mine.php', {}, 'GET');
-for (const t of rows){
-const el = document.createElement('div'); el.className='card';
-el.innerHTML = `<strong>${t.title}</strong><div>${t.summary||''}</div><small>${t.academic_year||''}</small>`;
-topicsDiv.appendChild(el);
-}
-}
-
-
-addBtn.addEventListener('click', async () =>{
-await api('/topics/create.php', {
-title: title.value, summary: summary.value, academic_year: academic_year.value
-});
-title.value = summary.value = academic_year.value = '';
-await loadTopics();
-});
+import { guardRole } from './js/auth.js';
+import { loadTeacherTopics } from './js/teacher.js';
+import { drawTeacherStats } from './js/charts.js';
+await guardRole('teacher');
+await loadTeacherTopics();
+await drawTeacherStats();
 </script>
 </body></html>

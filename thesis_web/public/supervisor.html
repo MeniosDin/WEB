@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="el">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Supervisor Tools</title>
+  <link rel="stylesheet" href="/public/assets/login.css" />
+  <style> main{max-width:800px} pre{background:#f4f4f8;padding:10px;border-radius:8px} </style>
+</head>
+<body>
+  <main class="auth-card">
+    <h1>Εργαλεία Επιβλέποντα</h1>
+    <section>
+      <h3>Πρόσκληση μέλους ΤΕΕ</h3>
+      <label>Thesis ID <input id="thesis_id"></label>
+      <label>Person ID <input id="person_id"></label>
+      <button id="inviteBtn">Invite</button>
+      <pre id="inviteOut"></pre>
+    </section>
+    <section>
+      <h3>Προγραμματισμός παρουσίασης</h3>
+      <label>Thesis ID <input id="thesis_id2"></label>
+      <label>Ημερομηνία/Ώρα <input id="when" placeholder="2025-10-01 12:00:00"></label>
+      <label>Mode
+        <select id="mode">
+          <option value="in_person">Δια ζώσης</option>
+          <option value="online">Online</option>
+        </select>
+      </label>
+      <label>Αίθουσα/Link <input id="room"></label>
+      <label>Published at (προαιρετικό) <input id="pub" placeholder="YYYY-MM-DD HH:MM:SS"></label>
+      <button id="schedBtn">Schedule</button>
+      <pre id="schedOut"></pre>
+    </section>
+  </main>
+  <script>
+    async function postJSON(url, data){
+      const res = await fetch(url, {
+        method:'POST',
+        headers:{'Content-Type':'application/json','Accept':'application/json'},
+        credentials:'same-origin',
+        body: JSON.stringify(data)
+      });
+      return {ok: res.ok, json: await res.json()};
+    }
+    inviteBtn.onclick = async () => {
+      const r = await postJSON('/api/committees/invite.php', {
+        thesis_id: thesis_id.value.trim(),
+        person_id: person_id.value.trim()
+      });
+      inviteOut.textContent = JSON.stringify(r.json, null, 2);
+    };
+    schedBtn.onclick = async () => {
+      const r = await postJSON('/api/presentation/schedule.php', {
+        thesis_id: thesis_id2.value.trim(),
+        when_dt: when.value.trim(),
+        mode: mode.value,
+        room_or_link: room.value.trim(),
+        published_at: pub.value.trim() || null
+      });
+      schedOut.textContent = JSON.stringify(r.json, null, 2);
+    };
+  </script>
+</body>
+</html>

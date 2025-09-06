@@ -1,34 +1,27 @@
 <?php
-// db.php
-// Δημιουργεί και επιστρέφει ένα PDO connection σε Singleton pattern.
-
+declare(strict_types=1);
 function db(): PDO {
-  static $pdo = null;
-  if ($pdo instanceof PDO) return $pdo;
+  static $pdo; if ($pdo) return $pdo;
 
-  $cfg = require __DIR__ . '/config.php';
+  $cfg = require dirname(__DIR__) . '/config.php';
   $db  = $cfg['db'];
 
   $dsn = sprintf(
     'mysql:host=%s;port=%d;dbname=%s;charset=%s',
-    $db['host'],
-    $db['port'],
-    $db['database'],
-    $db['charset']
+    $db['host'], (int)$db['port'], $db['database'], $db['charset'] ?? 'utf8mb4'
   );
 
   $options = [
-    PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION, // Exceptions για λάθη
-    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,       // fetch ως associative arrays
-    PDO::ATTR_EMULATE_PREPARES   => false,                  // native prepared statements
+    PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+    PDO::ATTR_EMULATE_PREPARES   => false,
   ];
 
   try {
     $pdo = new PDO($dsn, $db['user'], $db['password'], $options);
   } catch (PDOException $e) {
-    // Απλό error page (μην εκθέτεις stacktrace σε production)
     http_response_code(500);
-    exit('Database connection failed.');
+    exit('Database connection failed: '.$e->getMessage());
   }
   return $pdo;
 }

@@ -1,42 +1,4 @@
-<!doctype html>
-<html lang="el"><head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1"/>
-<link rel="stylesheet" href="./css/styles.css"/>
-<title>Φοιτητής/τρια — Διπλωματικές</title>
-</head><body>
-<div class="container grid">
-<header class="grid-2">
-<div><h1>Πίνακας Φοιτητή/τριας</h1><p id="welcome"></p></div>
-<div style="text-align:right"><a class="btn" href="login.html">Έξοδος</a></div>
-</header>
-<section class="card">
-<h2>Πρόγραμμα Παρουσίασης</h2>
-<div class="grid">
-<input id="thesis_id" placeholder="thesis_id"/>
-<input id="when_dt" placeholder="YYYY-MM-DD HH:MM:SS"/>
-<select id="mode"><option value="in_person">Δια ζώσης</option><option value="online">Online</option></select>
-<input id="room_or_link" placeholder="Αίθουσα ή σύνδεσμος"/>
-<button class="btn" id="save">Αποθήκευση</button>
-<p id="msg"></p>
-</div>
-</section>
-</div>
 <script type="module">
-import { api, me } from './js/api.js';
-const welcome = document.getElementById('welcome');
-const msg = document.getElementById('msg');
-(async function(){ const u = await me(); welcome.textContent = `Γεια σου, ${u.name}`; })();
-
-
-document.getElementById('save').addEventListener('click', async()=>{
-msg.textContent='';
-try{
-await api('/presentation/schedule.php', {
-thesis_id: thesis_id.value, when_dt: when_dt.value, mode: mode.value, room_or_link: room_or_link.value
-});
-msg.textContent = 'Αποθηκεύτηκε ✅';
-}catch(e){ msg.textContent = e.message; }
-});
+  import { initStudent } from './js/student.js';
+  initStudent();
 </script>
-</body></html>

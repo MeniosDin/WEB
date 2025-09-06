@@ -1,33 +1,26 @@
 <?php
-// Headers, CORS, JSON-only API, session start
 declare(strict_types=1);
+
+/* SESSION με σωστό cookie_path ώστε να περνάει παντού */
+if (session_status() !== PHP_SESSION_ACTIVE) {
+  session_set_cookie_params([
+    'path'     => '/',                                  // ΠΟΛΥ ΣΗΜΑΝΤΙΚΟ
+    'httponly' => true,
+    'secure'   => !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off',
+    'samesite' => 'Lax',
+  ]);
+  session_start();
+}
+
+/* JSON */
 header('Content-Type: application/json; charset=utf-8');
-header('X-Content-Type-Options: nosniff');
-header('X-Frame-Options: DENY');
-header('Referrer-Policy: no-referrer');
-header('Permissions-Policy: camera=(), microphone=(), geolocation=()');
-
-
-$origin = $_SERVER['HTTP_ORIGIN'] ?? '*';
-header('Access-Control-Allow-Origin: ' . $origin);
-header('Vary: Origin');
-header('Access-Control-Allow-Credentials: true');
-header('Access-Control-Allow-Headers: Content-Type, X-Requested-With');
-header('Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS');
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(204); exit; }
-
 
 require_once __DIR__ . '/db.php';
-require_once __DIR__ . '/utils/responses.php';
-require_once __DIR__ . '/utils/auth_guard.php';
-require_once __DIR__ . '/utils/validators.php';
-require_once __DIR__ . '/utils/files.php';
 
+/* Helpers */
+function ok(array $p = [], int $code = 200){ http_response_code($code); echo json_encode(['ok'=>true] + $p, JSON_UNESCAPED_UNICODE); exit; }
+function bad(string $m='Σφάλμα', int $code = 400){ http_response_code($code); echo json_encode(['ok'=>false,'error'=>$m], JSON_UNESCAPED_UNICODE); exit; }
+function body_json(): array { $raw = file_get_contents('php://input'); $j = json_decode($raw, true); return is_array($j) ? $j : []; }
 
-session_set_cookie_params([
-'httponly' => true,
-'samesite' => 'Lax',
-'secure' => isset($_SERVER['HTTPS'])
-]);
-session_start();
-?>
+/* PDO */
+$pdo = db();
