@@ -27,12 +27,10 @@ export async function initStudent() {
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const data = Object.fromEntries(new FormData(form).entries());
-      // Συμπλήρωσε thesis_id αν το άφησαν κενό
       if (!data.thesis_id && CURRENT_THESIS) data.thesis_id = CURRENT_THESIS.id;
 
       const res = await apiPost('/api/committee/invite.php', data);
       $('#inviteMsg').textContent = res.ok ? 'Η πρόσκληση στάλθηκε.' : (res.error || 'Σφάλμα');
-      // ανανέωση λίστας
       loadInvitations(data.thesis_id);
     });
   }
@@ -55,12 +53,10 @@ async function loadMyThesis() {
     return null;
   }
 
-  // Πάρε την πιο πρόσφατη
   items.sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
   const t = items[0];
   CURRENT_THESIS = t;
 
-  // Φέρε τίτλο θέματος
   let topicTitle = '—';
   try {
     const r = await apiGet(`/api/topics/get.php?id=${encodeURIComponent(t.topic_id)}`);
@@ -171,17 +167,16 @@ function renderThesis(t, topicTitle) {
 }
 
 function ensureBox(sel, title) {
-  let el = $(sel);
+  let el = document.querySelector(sel);
   if (!el) {
     const wrapper = document.createElement('section');
     wrapper.className = 'card';
     wrapper.style.padding = '1rem';
     wrapper.innerHTML = `<h3 style="margin-top:0">${title}</h3><div class="content"></div>`;
-    $('#thesis')?.appendChild(wrapper);
+    document.querySelector('#thesis')?.appendChild(wrapper);
     el = wrapper.querySelector('.content');
     el.id = sel.replace('#','');
   } else {
-    // Βεβαιώσου ότι έχει τίτλο επάνω
     const parent = el.closest('.card');
     if (parent && !parent.querySelector('h3')) {
       const h = document.createElement('h3');
@@ -205,5 +200,4 @@ function statusBadge(s) {
   return `<span style="display:inline-block;background:#1f2937;color:#e5e7eb;border-radius:.4rem;padding:.15rem .5rem;font-size:.85em">${label}</span>`;
 }
 
-/* αυτο-εκκίνηση όταν φορτώνει το module */
 initStudent().catch(()=>{});
