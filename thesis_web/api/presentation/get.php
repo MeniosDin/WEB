@@ -1,14 +1,14 @@
 <?php
-require_once __DIR__.'/../bootstrap.php';
-require_login();
+require_once __DIR__ . '/../bootstrap.php';
+$u = require_login();
 
-$tid = $_GET['thesis_id'] ?? '';
-if(!$tid) bad('Λείπει thesis_id');
+$thesis_id = $_GET['thesis_id'] ?? '';
+if ($thesis_id === '') bad('thesis_id required', 422);
+if ($u['role'] === 'student') { assert_student_owns_thesis($pdo, $thesis_id, $u['id']); }
 
-$s = db()->prepare("SELECT * FROM presentation WHERE thesis_id=?");
-$s->execute([$tid]);
-
-$item = $s->fetch();
-if(!$item) bad('Δεν βρέθηκε παρουσίαση', 404);
-
-ok(['item'=>$item]);
+$st = $pdo->prepare("
+  SELECT thesis_id, when_dt, mode, room_or_link, published_at
+  FROM presentation WHERE thesis_id=? LIMIT 1
+");
+$st->execute([$thesis_id]);
+ok(['item' => $st->fetch() ?: null]);

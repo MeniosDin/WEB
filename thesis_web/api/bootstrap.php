@@ -24,3 +24,19 @@ function body_json(): array { $raw = file_get_contents('php://input'); $j = json
 
 /* PDO */
 $pdo = db();
+
+/* ===== AUTH GUARDS (διαβάζουν $_SESSION['uid'] / $_SESSION['role']) ===== */
+function current_user(): ?array {
+  if (empty($_SESSION['uid']) || empty($_SESSION['role'])) return null;
+  return ['id' => $_SESSION['uid'], 'role' => $_SESSION['role']];
+}
+function require_login(): array {
+  $u = current_user();
+  if (!$u) bad('Unauthorized', 401);
+  return $u;
+}
+function require_role(string ...$roles): array {
+  $u = require_login();
+  if (!in_array($u['role'], $roles, true)) bad('Forbidden', 403);
+  return $u;
+}

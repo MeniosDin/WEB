@@ -1,311 +1,118 @@
 <!doctype html>
 <html lang="el">
 <head>
-  <meta charset="utf-8">
-  <title>Φοιτητής/τρια – Διπλωματική</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" href="/css/styles.css">
+  <meta charset="utf-8" />
+  <title>Πίνακας Φοιτητή/τριας</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    /* Μικρό styling για καθαρή παρουσίαση */
-    :root { --border:#ddd; --muted:#666; }
-    body { font-family: system-ui, Segoe UI, Roboto, Arial; margin: 20px; }
-    h2 { margin: 0 0 12px; }
-    .tabs { display: flex; gap: 8px; margin: 12px 0 16px; flex-wrap: wrap; }
-    .tab { padding: 8px 12px; border: 1px solid var(--border); border-radius: 10px; cursor: pointer; user-select: none; }
-    .tab.active { background: #f2f2f2; }
-    .panel { display: none; }
-    .panel.active { display: block; }
-    .card { border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin: 10px 0; background: #fff; }
-    .grid { display: grid; gap: 10px; grid-template-columns: 1fr 1fr; }
-    label { display: block; margin: 6px 0; }
-    input, select, textarea { width: 100%; padding: 8px; box-sizing: border-box; }
-    button { padding: 8px 12px; border-radius: 10px; border: 1px solid #999; cursor: pointer; }
-    .muted { color: var(--muted); font-size: 0.95em; }
-    .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-    .hidden { display: none !important; }
-    ul { margin: 6px 0 0 18px; }
+    :root { --b:#e5e7eb; --fg:#111; }
+    html,body{height:100%}
+    body{font-family:system-ui,Segoe UI,Roboto,Arial;margin:18px;color:var(--fg);background:#f8fafc}
+    h2{margin:0 0 .8rem}
+    .tabs{display:flex;gap:.5rem;margin-bottom:.8rem;flex-wrap:wrap}
+    .tabs button{border:1px solid var(--b);background:#fff;border-radius:10px;padding:.5rem .8rem;cursor:pointer}
+    .tabs button:focus{outline:2px solid #60a5fa}
+    .card{border:1px solid var(--b);border-radius:12px;background:#fff;padding:14px;margin:10px 0}
+    label{display:block;margin:.45rem 0}
+    input,textarea{width:100%;padding:.55rem;border:1px solid var(--b);border-radius:8px;background:#fff}
+    .row{display:grid;gap:.6rem;grid-template-columns:1fr 1fr}
+    .muted{color:#666}
+    [hidden]{display:none !important}
   </style>
 </head>
 <body>
-  <h2>Πίνακας Φοιτητή/τριας</h2>
+  <header style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.4rem">
+    <h2>Πίνακας Φοιτητή/τριας</h2>
+    <button id="logoutBtn" class="btn" style="border:1px solid var(--b);background:#fff;border-radius:10px;padding:.4rem .7rem;cursor:pointer">Αποσύνδεση</button>
+  </header>
 
-  <!-- Κύριες επιλογές -->
-  <div class="tabs" role="tablist" aria-label="Κύριες επιλογές">
-    <div role="tab" aria-controls="panel-thesis" aria-selected="true" tabindex="0" class="tab active" data-target="#panel-thesis">
-      1) Προβολή θέματος
-    </div>
-    <div role="tab" aria-controls="panel-profile" aria-selected="false" tabindex="0" class="tab" data-target="#panel-profile">
-      2) Επεξεργασία προφίλ
-    </div>
-    <div role="tab" aria-controls="panel-manage" aria-selected="false" tabindex="0" class="tab" data-target="#panel-manage">
-      3) Διαχείριση διπλωματικής
-    </div>
-  </div>
+  <!-- Tabs -->
+  <nav class="tabs">
+    <button type="button" data-tab="view">1) Προβολή θέματος</button>
+    <button type="button" data-tab="profile">2) Επεξεργασία προφίλ</button>
+    <button type="button" data-tab="manage">3) Διαχείριση διπλωματικής</button>
+  </nav>
 
-  <!-- (1) Προβολή θέματος -->
-  <section id="panel-thesis" class="panel active" role="tabpanel" aria-labelledby="tab-thesis">
-    <div id="thesisInfo" class="card">
-      Φόρτωση στοιχείων διπλωματικής…
-    </div>
+  <!-- 1) ΠΡΟΒΟΛΗ ΘΕΜΑΤΟΣ -->
+  <section id="pane-view" class="card">
+    <!-- Το student.js περιμένει #thesis -->
+    <section id="thesis">Φόρτωση στοιχείων διπλωματικής…</section>
   </section>
 
-  <!-- (2) Επεξεργασία Προφίλ -->
-  <section id="panel-profile" class="panel" role="tabpanel" aria-labelledby="tab-profile">
-    <div class="card">
-      <h3>Στοιχεία επικοινωνίας</h3>
-      <div class="grid">
-        <label>Πλήρης ταχυδρομική διεύθυνση
-          <textarea id="address" rows="3" placeholder="Οδός, αριθμός, ΤΚ, πόλη"></textarea>
+  <!-- 2) ΕΠΕΞΕΡΓΑΣΙΑ ΠΡΟΦΙΛ -->
+  <section id="pane-profile" class="card" hidden>
+    <h3>Το προφίλ μου</h3>
+    <form id="profileF">
+      <div class="row">
+        <label>Ονοματεπώνυμο
+          <input name="name" disabled />
         </label>
-        <label>Email επικοινωνίας
-          <input id="email" type="email" placeholder="name@domain.tld">
-        </label>
-        <label>Κινητό τηλέφωνο
-          <input id="phone_mobile" type="tel" placeholder="+30 6X XXX XXXX">
-        </label>
-        <label>Σταθερό τηλέφωνο
-          <input id="phone_landline" type="tel" placeholder="+30 2X XXX XXXX">
+        <label>Αρ. Μητρώου
+          <input name="student_number" disabled />
         </label>
       </div>
-      <div class="row" style="margin-top:8px">
-        <button id="saveProfile">Αποθήκευση</button>
-        <span id="profileMsg" class="muted" aria-live="polite"></span>
+      <label>Email
+        <input name="email" />
+      </label>
+      <label>Διεύθυνση
+        <textarea name="address" rows="2"></textarea>
+      </label>
+      <div class="row">
+        <label>Κινητό
+          <input name="phone_mobile" />
+        </label>
+        <label>Σταθερό
+          <input name="phone_landline" />
+        </label>
       </div>
-    </div>
+      <button>Αποθήκευση</button>
+      <span id="pmsg" class="muted" style="margin-left:.5rem"></span>
+    </form>
   </section>
 
-  <!-- (3) Διαχείριση διπλωματικής -->
-  <section id="panel-manage" class="panel" role="tabpanel" aria-labelledby="tab-manage">
-    <div class="card" id="manageWrap">
-      <div id="statusBlock" class="muted">Κατάσταση: —</div>
+  <!-- 3) ΔΙΑΧΕΙΡΙΣΗ ΔΙΠΛΩΜΑΤΙΚΗΣ -->
+  <section id="pane-manage" class="card" hidden>
+    <h3>Προσκλήσεις τριμελούς</h3>
 
-      <!-- Υπό ανάθεση -->
-      <div id="block-under-assignment" class="card hidden" aria-live="polite">
-        <h3>Υπό ανάθεση</h3>
-        <p class="muted">
-          Επίλεξε διδάσκοντες ως μέλη τριμελούς. Όταν 2 αποδεχτούν, η ΔΕ γίνεται «Ενεργή» και οι υπόλοιπες εκκρεμείς προσκλήσεις ακυρώνονται αυτόματα.
-        </p>
-        <div class="row">
-          <label style="flex:1">person_id (από πίνακα <code>persons</code>)
-            <input id="personId" placeholder="π.χ. 4a2f-...-uuid">
-          </label>
-          <button id="inviteBtn">Προσθήκη / Πρόσκληση</button>
-        </div>
-      </div>
+    <form id="inviteF" class="card" style="padding:12px">
+      <!-- το student.js θα προσθέσει thesis_id αν λείπει -->
+      <label>person_id (UUID από persons)
+        <input name="person_id" placeholder="π.χ. 2b0b3e24-...." />
+      </label>
+      <button>Αποστολή πρόσκλησης</button>
+      <div id="inviteMsg" class="muted" style="margin-top:.5rem"></div>
+    </form>
 
-      <!-- Υπό εξέταση -->
-      <div id="block-under-review" class="card hidden" aria-live="polite">
-        <h3>Υπό εξέταση</h3>
-
-        <h4>Ανάρτηση πρόχειρου κειμένου (αρχείο)</h4>
-        <form id="uploadForm" enctype="multipart/form-data" class="row">
-          <input type="hidden" name="thesis_id" id="up_thesis">
-          <input type="hidden" name="kind" value="draft">
-          <input type="file" name="file" required>
-          <button type="submit">Ανέβασμα</button>
-        </form>
-
-        <h4>Προσθήκη συνδέσμων (Drive, YouTube κ.λπ.)</h4>
-        <div class="row">
-          <input id="linkUrl" placeholder="https://…">
-          <select id="linkKind">
-            <option value="code">code</option>
-            <option value="video">video</option>
-            <option value="other" selected>other</option>
-          </select>
-          <button id="addLink">Προσθήκη</button>
-        </div>
-
-        <h4>Ημερομηνία & τρόπος εξέτασης</h4>
-        <div class="grid">
-          <label>Ημερομηνία/ώρα
-            <input id="when_dt" type="datetime-local">
-          </label>
-          <label>Τρόπος
-            <select id="mode">
-              <option value="in_person">Δια ζώσης</option>
-              <option value="online">Διαδικτυακά</option>
-            </select>
-          </label>
-          <label>Αίθουσα ή σύνδεσμος
-            <input id="room_or_link" placeholder="π.χ. Β-101 ή https://…">
-          </label>
-        </div>
-        <div class="row">
-          <button id="savePresentation">Καταχώρηση εξέτασης</button>
-          <span class="muted">* Ελέγχονται αυτόματα τα χρονικά όρια (21–60 ημέρες από υποβολή στην τριμελή).</span>
-        </div>
-
-        <h4 style="margin-top:10px">Νημερτής (τελικό κείμενο)</h4>
-        <div class="grid">
-          <label>Σύνδεσμος αποθετηρίου
-            <input id="nim_url" placeholder="https://nimeritis.uni.gr/...">
-          </label>
-          <label>Ημερομηνία κατάθεσης
-            <input id="nim_date" type="date">
-          </label>
-        </div>
-        <div class="row">
-          <button id="saveNim">Αποθήκευση Νημερτή</button>
-        </div>
-
-        <h4 style="margin-top:10px">Πρακτικό εξέτασης</h4>
-        <p class="muted">Μετά την καταχώρηση βαθμών από τα μέλη, θα μπορείς να προβάλλεις το πρακτικό σε HTML.</p>
-        <p><a id="minutesLinkUR" class="hidden" target="_blank" rel="noopener">Προβολή πρακτικού</a></p>
-      </div>
-
-      <!-- Περατωμένη -->
-      <div id="block-completed" class="card hidden" aria-live="polite">
-        <h3>Περατωμένη</h3>
-        <p class="muted">Διαθέσιμη μόνο προβολή πληροφοριών, ιστορικού και πρακτικού εξέτασης.</p>
-        <p><a id="minutesLink" target="_blank" rel="noopener">Πρακτικό εξέτασης (HTML)</a></p>
-      </div>
-    </div>
+    <!-- Τα boxes που γεμίζει το student.js -->
+    <div id="invitesBox" class="card"></div>
+    <div id="membersBox" class="card"></div>
+    <div id="timelineBox" class="card"></div>
+    <div id="gradesBox" class="card"></div>
+    <div id="presentationBox" class="card"></div>
   </section>
 
-  <!-- Scripts -->
+  <!-- JS modules (προσοχή: type="module") -->
   <script type="module">
-    import { guard } from '/js/auth.js';
-    import { apiFetch } from '/js/api.js';
+    import { logout } from './js/auth.js';
+    document.getElementById('logoutBtn').addEventListener('click', logout);
 
-    // Guard: μόνο φοιτητές
-    await guard(['student']);
-
-    // Tabs
-    const tabs = document.querySelectorAll('.tab');
-    const panels = document.querySelectorAll('.panel');
-    tabs.forEach(tab => {
-      tab.addEventListener('click', () => {
-        tabs.forEach(t => { t.classList.remove('active'); t.setAttribute('aria-selected','false'); });
-        panels.forEach(p => p.classList.remove('active'));
-        tab.classList.add('active'); tab.setAttribute('aria-selected','true');
-        document.querySelector(tab.dataset.target).classList.add('active');
-      });
-      tab.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') tab.click(); });
-    });
-
-    // Στοιχεία UI
-    const thesisInfo = document.getElementById('thesisInfo');
-    const statusBlock = document.getElementById('statusBlock');
-    const blockUA = document.getElementById('block-under-assignment');
-    const blockUR = document.getElementById('block-under-review');
-    const blockC  = document.getElementById('block-completed');
-    const minutesLink    = document.getElementById('minutesLink');
-    const minutesLinkUR  = document.getElementById('minutesLinkUR');
-    const upThesisHidden = document.getElementById('up_thesis');
-
-    let thesis = null;
-
-    async function loadThesis() {
-      const res = await apiFetch('/api/student/thesis.php');
-      thesis = res.thesis || null;
-
-      if (!thesis) {
-        thesisInfo.innerHTML = '<div class="muted">Δεν έχεις ενεργή διπλωματική.</div>';
-        document.getElementById('manageWrap').classList.add('hidden');
-        return;
-      }
-
-      // Προβολή θέματος (1)
-      const committeeHtml = (thesis.committee || [])
-        .map(m => `<li>${m.role_in_committee === 'supervisor' ? 'Επιβλέπων/ουσα' : 'Μέλος'}: ${m.name}${m.affiliation ? ' – '+m.affiliation : ''}</li>`)
-        .join('');
-      thesisInfo.innerHTML = `
-        <div class="card">
-          <h3>${thesis.title}</h3>
-          <p>${thesis.summary ? thesis.summary : ''}</p>
-          ${thesis.pdf_path ? `<p><a href="${thesis.pdf_path}" target="_blank" rel="noopener">Συνημμένο αρχείο περιγραφής</a></p>` : ''}
-          <p><b>Τρέχουσα κατάσταση:</b> ${thesis.status}</p>
-          ${thesis.assigned_at ? `<p><b>Χρόνος από ανάθεση:</b> ${thesis.days_since_assigned} ημέρες</p>` : ''}
-          <h4>Τριμελής επιτροπή</h4>
-          <ul>${committeeHtml || '<li class="muted">Δεν έχουν οριστεί ακόμα.</li>'}</ul>
-        </div>
-      `;
-
-      // Διαχείριση (3) ανά κατάσταση
-      statusBlock.textContent = `Κατάσταση: ${thesis.status}`;
-      upThesisHidden.value = thesis.thesis_id;
-
-      blockUA.classList.add('hidden');
-      blockUR.classList.add('hidden');
-      blockC.classList.add('hidden');
-      minutesLinkUR.classList.add('hidden');
-
-      if (thesis.status === 'under_assignment') {
-        blockUA.classList.remove('hidden');
-      } else if (thesis.status === 'under_review') {
-        blockUR.classList.remove('hidden');
-        // Αν υπάρχει πρακτικό, δείξε το link
-        minutesLinkUR.href = `/api/exam/minutes_html.php?thesis_id=${encodeURIComponent(thesis.thesis_id)}`;
-        minutesLinkUR.classList.remove('hidden');
-      } else if (thesis.status === 'completed') {
-        blockC.classList.remove('hidden');
-        minutesLink.href = `/api/exam/minutes_html.php?thesis_id=${encodeURIComponent(thesis.thesis_id)}`;
-      }
+    // απλό tab switcher
+    const panes = {
+      view:    document.getElementById('pane-view'),
+      profile: document.getElementById('pane-profile'),
+      manage:  document.getElementById('pane-manage'),
+    };
+    function show(name){
+      Object.entries(panes).forEach(([k,el]) => el.hidden = (k!==name));
     }
-
-    await loadThesis();
-
-    // (2) Αποθήκευση προφίλ
-    document.getElementById('saveProfile').addEventListener('click', async () => {
-      const payload = {
-        address: document.getElementById('address').value,
-        email: document.getElementById('email').value,
-        phone_mobile: document.getElementById('phone_mobile').value,
-        phone_landline: document.getElementById('phone_landline').value
-      };
-      const msg = document.getElementById('profileMsg');
-      try {
-        await apiFetch('/api/student/profile_update.php', { method: 'POST', body: JSON.stringify(payload) });
-        msg.textContent = 'Αποθηκεύτηκε.';
-      } catch (e) {
-        msg.textContent = 'Σφάλμα αποθήκευσης.';
-      }
+    document.querySelectorAll('[data-tab]').forEach(btn=>{
+      btn.addEventListener('click', ()=> show(btn.dataset.tab));
     });
-
-    // (3) Υπό ανάθεση: πρόσκληση μέλους (persons.id)
-    document.getElementById('inviteBtn').addEventListener('click', async () => {
-      const person_id = document.getElementById('personId').value.trim();
-      if (!person_id) return alert('Δώσε person_id (UUID από τον πίνακα persons).');
-      await apiFetch('/api/committee/invite.php', { method: 'POST', body: JSON.stringify({ thesis_id: thesis.thesis_id, person_id }) });
-      alert('Η πρόσκληση στάλθηκε. Μόλις 2 αποδεχτούν, η ΔΕ θα γίνει «Ενεργή».');
-    });
-
-    // (3) Υπό εξέταση: upload draft
-    document.getElementById('uploadForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const fd = new FormData(e.target);
-      await apiFetch('/api/resources/create.php', { method: 'POST', body: fd }); // βεβαιώσου ότι το endpoint υποστηρίζει FormData
-      alert('Το πρόχειρο ανέβηκε.');
-    });
-
-    // (3) Υπό εξέταση: προσθήκη συνδέσμου
-    document.getElementById('addLink').addEventListener('click', async () => {
-      const url = document.getElementById('linkUrl').value.trim();
-      const kind = document.getElementById('linkKind').value;
-      if (!url) return alert('Δώσε URL.');
-      await apiFetch('/api/resources/create.php', { method: 'POST', body: JSON.stringify({ thesis_id: thesis.thesis_id, kind, url }) });
-      alert('Ο σύνδεσμος προστέθηκε.');
-    });
-
-    // (3) Υπό εξέταση: ημερομηνία εξέτασης
-    document.getElementById('savePresentation').addEventListener('click', async () => {
-      const when_dt = document.getElementById('when_dt').value ? (document.getElementById('when_dt').value.replace('T',' ')+':00') : '';
-      const mode = document.getElementById('mode').value;
-      const room_or_link = document.getElementById('room_or_link').value.trim();
-      if (!when_dt || !room_or_link) return alert('Συμπλήρωσε ημερομηνία/ώρα και αίθουσα ή σύνδεσμο.');
-      await apiFetch('/api/presentation/schedule.php', { method: 'POST', body: JSON.stringify({ thesis_id: thesis.thesis_id, when_dt, mode, room_or_link }) });
-      alert('Καταχωρήθηκε η εξέταση.');
-    });
-
-    // (3) Υπό εξέταση: Νημερτής
-    document.getElementById('saveNim').addEventListener('click', async () => {
-      const nimeritis_url = document.getElementById('nim_url').value.trim();
-      const nimeritis_deposit_date = document.getElementById('nim_date').value;
-      if (!nimeritis_url || !nimeritis_deposit_date) return alert('Συμπλήρωσε και τα δύο πεδία.');
-      await apiFetch('/api/thesis/set_nimeritis.php', { method: 'POST', body: JSON.stringify({ thesis_id: thesis.thesis_id, nimeritis_url, nimeritis_deposit_date }) });
-      alert('Αποθηκεύτηκε ο σύνδεσμος Νημερτής.');
-    });
+    show('view'); // default
   </script>
+
+  <!-- Φόρτωση των modules της σελίδας -->
+  <script type="module" src="./js/student_profile.js"></script>
+  <script type="module" src="./js/student.js"></script>
 </body>
 </html>

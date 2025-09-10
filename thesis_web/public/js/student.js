@@ -24,12 +24,20 @@ export async function initStudent() {
   // Wire up invite form (αν υπάρχει στη σελίδα)
   const form = $('#inviteF');
   if (form) {
+    // αν δεν έχει ήδη μπει thesis_id, βάλ' το
+    if (!form.querySelector('[name="thesis_id"]') && CURRENT_THESIS) {
+      const hidden = document.createElement('input');
+      hidden.type = 'hidden';
+      hidden.name = 'thesis_id';
+      hidden.value = CURRENT_THESIS.id;
+      form.appendChild(hidden);
+    }
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const data = Object.fromEntries(new FormData(form).entries());
       if (!data.thesis_id && CURRENT_THESIS) data.thesis_id = CURRENT_THESIS.id;
 
-      const res = await apiPost('/api/committee/invite.php', data);
+      const res = await apiPost('/committee/invite.php', data); // <-- ΧΩΡΙΣ /api
       $('#inviteMsg').textContent = res.ok ? 'Η πρόσκληση στάλθηκε.' : (res.error || 'Σφάλμα');
       loadInvitations(data.thesis_id);
     });
@@ -42,7 +50,7 @@ async function loadMyThesis() {
   const out = $('#thesis');
   out.innerHTML = 'Φόρτωση...';
 
-  const res = await apiGet('/api/theses/list.php');
+  const res = await apiGet('/theses/list.php'); // <-- ΧΩΡΙΣ /api
   if (!res.ok) { out.textContent = res.error || 'Σφάλμα φόρτωσης'; return null; }
 
   const items = res.items || [];
@@ -59,7 +67,7 @@ async function loadMyThesis() {
 
   let topicTitle = '—';
   try {
-    const r = await apiGet(`/api/topics/get.php?id=${encodeURIComponent(t.topic_id)}`);
+    const r = await apiGet(`/topics/get.php?id=${encodeURIComponent(t.topic_id)}`); // <-- ΧΩΡΙΣ /api
     topicTitle = r?.item?.title || '—';
   } catch {}
 
@@ -70,7 +78,7 @@ async function loadMyThesis() {
 async function loadInvitations(thesis_id) {
   const box = ensureBox('#invitesBox', 'Προσκλήσεις');
   box.innerHTML = 'Φόρτωση...';
-  const res = await apiGet(`/api/committee/invitations_list.php?thesis_id=${encodeURIComponent(thesis_id)}`);
+  const res = await apiGet(`/committee/invitations_list.php?thesis_id=${encodeURIComponent(thesis_id)}`); // <-- ΧΩΡΙΣ /api
   if (!res.ok) { box.textContent = res.error || 'Σφάλμα'; return; }
   const rows = res.items || [];
   if (!rows.length) { box.innerHTML = '<em>Δεν υπάρχουν προσκλήσεις ακόμη.</em>'; return; }
@@ -86,7 +94,7 @@ async function loadInvitations(thesis_id) {
 async function loadMembers(thesis_id) {
   const box = ensureBox('#membersBox', 'Μέλη Τριμελούς');
   box.innerHTML = 'Φόρτωση...';
-  const res = await apiGet(`/api/committee/members.php?thesis_id=${encodeURIComponent(thesis_id)}`);
+  const res = await apiGet(`/committee/members.php?thesis_id=${encodeURIComponent(thesis_id)}`); // <-- ΧΩΡΙΣ /api
   if (!res.ok) { box.textContent = res.error || 'Σφάλμα'; return; }
   const rows = res.items || [];
   if (!rows.length) { box.innerHTML = '<em>Δεν έχουν οριστεί ακόμη μέλη.</em>'; return; }
@@ -101,7 +109,7 @@ async function loadMembers(thesis_id) {
 async function loadTimeline(thesis_id) {
   const box = ensureBox('#timelineBox', 'Χρονολόγιο');
   box.innerHTML = 'Φόρτωση...';
-  const res = await apiGet(`/api/theses/timeline.php?thesis_id=${encodeURIComponent(thesis_id)}`);
+  const res = await apiGet(`/theses/timeline.php?thesis_id=${encodeURIComponent(thesis_id)}`); // <-- ΧΩΡΙΣ /api
   if (!res.ok) { box.textContent = res.error || 'Σφάλμα'; return; }
   const rows = res.items || [];
   if (!rows.length) { box.innerHTML = '<em>Ακόμη δεν υπάρχουν γεγονότα.</em>'; return; }
@@ -117,7 +125,7 @@ async function loadTimeline(thesis_id) {
 async function loadGrades(thesis_id) {
   const box = ensureBox('#gradesBox', 'Βαθμολογία (Σύνοψη)');
   box.innerHTML = 'Φόρτωση...';
-  const res = await apiGet(`/api/grades/summary.php?thesis_id=${encodeURIComponent(thesis_id)}`);
+  const res = await apiGet(`/grades/summary.php?thesis_id=${encodeURIComponent(thesis_id)}`); // <-- ΧΩΡΙΣ /api
   if (!res.ok) { box.textContent = res.error || 'Σφάλμα'; return; }
   const s = res.summary || {};
   if (!s.cnt) { box.innerHTML = '<em>Δεν έχουν καταχωρηθεί βαθμοί ακόμη.</em>'; return; }
@@ -132,7 +140,7 @@ async function loadGrades(thesis_id) {
 async function loadPresentation(thesis_id) {
   const box = ensureBox('#presentationBox', 'Παρουσίαση');
   box.innerHTML = 'Φόρτωση...';
-  const res = await apiGet(`/api/presentation/get.php?thesis_id=${encodeURIComponent(thesis_id)}`);
+  const res = await apiGet(`/presentation/get.php?thesis_id=${encodeURIComponent(thesis_id)}`); // <-- ΧΩΡΙΣ /api
   if (!res.ok) { box.textContent = res.error || 'Σφάλμα'; return; }
   const p = res.item;
   if (!p) { box.innerHTML = '<em>Δεν έχει προγραμματιστεί ακόμη παρουσίαση.</em>'; return; }
