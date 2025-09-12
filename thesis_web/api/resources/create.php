@@ -1,43 +1,40 @@
 <?php
 require_once __DIR__ . '/../bootstrap.php';
-$user = requireAuth(); requireRole($user, ['student','teacher']);
+$u = require_login();
 
-function checkAccess(PDO $pdo, string $thesis_id, string $user_id): bool {
-  $q = $pdo->prepare("
-    SELECT 1 FROM theses t
-    LEFT JOIN committee_members cm ON cm.thesis_id=t.id
-    WHERE t.id=:t AND (t.student_id=:u OR cm.person_id IN (SELECT id FROM persons WHERE user_id=:u))
-    LIMIT 1");
-  $q->execute([':t'=>$thesis_id, ':u'=>$user_id]);
-  return (bool)$q->fetchColumn();
-}
+$isMultipart = (stripos($_SERVER['CONTENT_TYPE'] ?? '', 'multipart/') === 0);
+$in = $isMultipart ? $_POST : (body_json() ?: $_POST);
 
-if (($_SERVER['CONTENT_TYPE'] ?? '') && str_starts_with($_SERVER['CONTENT_TYPE'], 'multipart/form-data')) {
-  // --- File upload ---
-  if (empty($_FILES['file'])) json_error('file required', 422);
-  $thesis_id = $_POST['thesis_id'] ?? ''; if (!$thesis_id) json_error('thesis_id required', 422);
-  $kind = $_POST['kind'] ?? 'draft';
-  if (!checkAccess($pdo, $thesis_id, $user['id'])) json_error('Not allowed', 403);
+$thesis_id = trim((string)($in['thesis_id'] ?? ''));
+$kind      = trim((string)($in['kind'] ?? 'draft')); // draft|code|video|image|other
+if ($thesis_id === '') bad('thesis_id required', 422);
+assert_student_owns_thesis($pdo, $thesis_id, $u['id']);
 
-  $dir = __DIR__ . '/../../uploads/' . $thesis_id;
-  if (!is_dir($dir)) mkdir($dir, 0770, true);
-  $safe = preg_replace('/[^a-zA-Z0-9._-]+/u', '_', $_FILES['file']['name']);
-  $fname = bin2hex(random_bytes(6)) . '_' . $safe;
-  $dest = $dir . '/' . $fname;
-  if (!move_uploaded_file($_FILES['file']['tmp_name'], $dest)) json_error('upload failed', 500);
+$url_or_path = null;
 
-  $rel = 'uploads/'.$thesis_id.'/'.$fname;
-  $pdo->prepare("INSERT INTO resources(thesis_id, kind, url_or_path) VALUES(:t,:k,:p)")
-      ->execute([':t'=>$thesis_id, ':k'=>$kind, ':p'=>$rel]);
-  json_ok(['ok'=>true,'path'=>$rel]);
+if ($isMultipart && isset($_FILES['file']) && ($_FILES['file']['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_OK) {
+  // αποθήκευση αρχείου κάτω από /public/uploads/theses/{thesis_id}/
+  $ext = pathinfo($_FILES['file']['name'], PATHINFO_EXTENSION);
+  $safeThesis = preg_replace('/[^a-zA-Z0-9\-_]/', '_', $thesis_id);
+  $base = dirname(__DIR__);                  // .../api -> project root
+  $dir  = $base . '/public/uploads/theses/' . $safeThesis;
+  if (!is_dir($dir)) @mkdir($dir, 0775, true);
+  $fname = uniqid('res_', true) . ($ext ? ('.' . $ext) : '');
+  $dest  = $dir . '/' . $fname;
+
+  if (!move_uploaded_file($_FILES['file']['tmp_name'], $dest)) {
+    bad('Αποτυχία μεταφόρτωσης', 400);
+  }
+  // public-relative URL
+  $url_or_path = '/uploads/theses/' . $safeThesis . '/' . $fname;
 } else {
-  // --- JSON: URL resource ---
-  $in = json_decode(file_get_contents('php://input'), true) ?: [];
-  require_fields($in, ['thesis_id','url']);
-  $kind = $in['kind'] ?? 'other';
-  if (!checkAccess($pdo, $in['thesis_id'], $user['id'])) json_error('Not allowed', 403);
-
-  $pdo->prepare("INSERT INTO resources(thesis_id, kind, url_or_path) VALUES(:t,:k,:u)")
-      ->execute([':t'=>$in['thesis_id'], ':k'=>$kind, ':u'=>$in['url']]);
-  json_ok(['ok'=>true]);
+  $url_or_path = trim((string)($in['url_or_path'] ?? ''));
+  if ($url_or_path === '') bad('url_or_path or file required', 422);
 }
+
+if (!in_array($kind, ['draft','code','video','image','other'], true)) $kind = 'other';
+
+$st = $pdo->prepare("INSERT INTO resources(thesis_id, kind, url_or_path) VALUES(?,?,?)");
+$st->execute([$thesis_id, $kind, $url_or_path]);
+
+ok(['item'=>['thesis_id'=>$thesis_id, 'kind'=>$kind, 'url_or_path'=>$url_or_path]]);

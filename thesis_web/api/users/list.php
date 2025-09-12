@@ -1,6 +1,14 @@
 <?php
-require_once __DIR__.'/../bootstrap.php'; require_role('secretariat');
-$term = '%'.($_GET['q'] ?? '').'%';
-$s = db()->prepare("SELECT id, role, student_number, name, email FROM users
-WHERE name LIKE ? OR email LIKE ? OR student_number LIKE ? LIMIT 200");
-$s->execute([$term,$term,$term]); ok(['items'=>$s->fetchAll()]);
+require_once __DIR__ . '/../bootstrap.php';
+$u = _require_login();
+
+$q    = trim((string)($_GET['q'] ?? ''));
+$role = ($_GET['role'] ?? 'teacher') === 'teacher' ? 'teacher' : 'teacher';
+
+if ($q !== '') {
+  $st = $pdo->prepare("SELECT id, name, email FROM users WHERE role='teacher' AND (name LIKE :q OR email LIKE :q) ORDER BY name LIMIT 50");
+  $st->execute([':q'=>'%'.$q.'%']);
+} else {
+  $st = $pdo->query("SELECT id, name, email FROM users WHERE role='teacher' ORDER BY name LIMIT 50");
+}
+echo json_encode(['ok'=>true,'items'=>$st->fetchAll()]);
