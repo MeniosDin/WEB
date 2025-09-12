@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="el">
+<head>
+  <meta charset="utf-8" />
+  <title>Πίνακας Φοιτητή/τριας</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root { --b:#e5e7eb; --fg:#111; }
+    html,body{height:100%}
+    body{font-family:system-ui,Segoe UI,Roboto,Arial;margin:18px;color:var(--fg);background:#f8fafc}
+    h2{margin:0 0 .8rem}
+    .tabs{display:flex;gap:.5rem;margin-bottom:.8rem;flex-wrap:wrap}
+    .tabs button{border:1px solid var(--b);background:#fff;border-radius:10px;padding:.5rem .8rem;cursor:pointer}
+    .tabs button:focus{outline:2px solid #60a5fa}
+    .card{border:1px solid var(--b);border-radius:12px;background:#fff;padding:14px;margin:10px 0}
+    label{display:block;margin:.45rem 0}
+    input,textarea{width:100%;padding:.55rem;border:1px solid var(--b);border-radius:8px;background:#fff}
+    .row{display:grid;gap:.6rem;grid-template-columns:1fr 1fr}
+    .muted{color:#666}
+    [hidden]{display:none !important}
+  </style>
+</head>
+<body>
+  <header style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.4rem">
+    <h2>Πίνακας Φοιτητή/τριας</h2>
+    <button id="logoutBtn" class="btn" style="border:1px solid var(--b);background:#fff;border-radius:10px;padding:.4rem .7rem;cursor:pointer">Αποσύνδεση</button>
+  </header>
+
+  <!-- Tabs -->
+  <nav class="tabs">
+    <button type="button" data-tab="view">1) Προβολή θέματος</button>
+    <button type="button" data-tab="profile">2) Επεξεργασία προφίλ</button>
+    <button type="button" data-tab="manage">3) Διαχείριση διπλωματικής</button>
+  </nav>
+
+  <!-- 1) ΠΡΟΒΟΛΗ ΘΕΜΑΤΟΣ -->
+  <section id="pane-view" class="card">
+    <!-- Το student.js περιμένει #thesis -->
+    <section id="thesis">Φόρτωση στοιχείων διπλωματικής…</section>
+  </section>
+
+  <!-- 2) ΕΠΕΞΕΡΓΑΣΙΑ ΠΡΟΦΙΛ -->
+  <section id="pane-profile" class="card" hidden>
+    <h3>Το προφίλ μου</h3>
+    <form id="profileF">
+      <div class="row">
+        <label>Ονοματεπώνυμο
+          <input name="name" disabled />
+        </label>
+        <label>Αρ. Μητρώου
+          <input name="student_number" disabled />
+        </label>
+      </div>
+      <label>Email
+        <input name="email" />
+      </label>
+      <label>Διεύθυνση
+        <textarea name="address" rows="2"></textarea>
+      </label>
+      <div class="row">
+        <label>Κινητό
+          <input name="phone_mobile" />
+        </label>
+        <label>Σταθερό
+          <input name="phone_landline" />
+        </label>
+      </div>
+      <button>Αποθήκευση</button>
+      <span id="pmsg" class="muted" style="margin-left:.5rem"></span>
+    </form>
+  </section>
+
+  <!-- 3) ΔΙΑΧΕΙΡΙΣΗ ΔΙΠΛΩΜΑΤΙΚΗΣ -->
+  <section id="pane-manage" class="card" hidden>
+    <h3>Προσκλήσεις τριμελούς</h3>
+
+    <form id="inviteF" class="card" style="padding:12px">
+      <!-- το student.js θα προσθέσει thesis_id αν λείπει -->
+      <label>person_id (UUID από persons)
+        <input name="person_id" placeholder="π.χ. 2b0b3e24-...." />
+      </label>
+      <button>Αποστολή πρόσκλησης</button>
+      <div id="inviteMsg" class="muted" style="margin-top:.5rem"></div>
+    </form>
+
+    <!-- Τα boxes που γεμίζει το student.js -->
+    <div id="invitesBox" class="card"></div>
+    <div id="membersBox" class="card"></div>
+    <div id="timelineBox" class="card"></div>
+    <div id="gradesBox" class="card"></div>
+    <div id="presentationBox" class="card"></div>
+  </section>
+
+  <!-- JS modules (προσοχή: type="module") -->
+  <script type="module">
+    import { logout } from './js/auth.js';
+    document.getElementById('logoutBtn').addEventListener('click', logout);
+
+    // απλό tab switcher
+    const panes = {
+      view:    document.getElementById('pane-view'),
+      profile: document.getElementById('pane-profile'),
+      manage:  document.getElementById('pane-manage'),
+    };
+    function show(name){
+      Object.entries(panes).forEach(([k,el]) => el.hidden = (k!==name));
+    }
+    document.querySelectorAll('[data-tab]').forEach(btn=>{
+      btn.addEventListener('click', ()=> show(btn.dataset.tab));
+    });
+    show('view'); // default
+  </script>
+
+  <!-- Φόρτωση των modules της σελίδας -->
+  <script type="module" src="./js/student_profile.js"></script>
+  <script type="module" src="./js/student.js"></script>
+</body>
+</html>
