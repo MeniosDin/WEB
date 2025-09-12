@@ -17,7 +17,8 @@ if (await me()) location.replace('app.html');
 document.getElementById('f').addEventListener('submit', async (e)=>{
 e.preventDefault();
 const data = Object.fromEntries(new FormData(e.target).entries());
-const res = await apiPost('/api/auth/login.php', data);
+const res = await apiPost('../api/auth/login.php', data);
+
 if (!res.ok) return document.getElementById('err').textContent = res.error || 'Σφάλμα';
 setAuth(true);
 const u = await me();

@@ -8,7 +8,7 @@ try {
   if (!$thesis_id) { echo json_encode(['ok'=>false,'error'=>'thesis_id required']); exit; }
 
   if (MOCK_MODE) {
-    echo json_encode(['ok'=>true,'summary'=>null], JSON_UNESCAPED_UNICODE); exit;
+    echo json_encode(['ok'=>true,'items'=>[]], JSON_UNESCAPED_UNICODE); exit;
   }
 
   @require_once __DIR__ . '/../utils/bootstrap.php';
@@ -18,12 +18,12 @@ try {
 
   ensure_logged_in(); assert_student_owns_thesis($thesis_id);
 
-  $sql = "SELECT COUNT(*) AS cnt, AVG(total_score) AS avg_total FROM grades WHERE thesis_id = ?";
+  $sql = "SELECT u.first_name, u.last_name, u.email, cm.role_in_committee
+          FROM committee_members cm JOIN users u ON u.id = cm.user_id
+          WHERE cm.thesis_id = ? ORDER BY (cm.role_in_committee='supervisor') DESC, u.last_name ASC";
   $st = $pdo->prepare($sql); $st->execute([$thesis_id]);
-  $row = $st->fetch(PDO::FETCH_ASSOC);
-  $summary = ($row && (int)$row['cnt']>0) ? ['cnt'=>(int)$row['cnt'], 'avg_total'=> ($row['avg_total']!==null?(float)$row['avg_total']:null)] : null;
-
-  echo json_encode(['ok'=>true,'summary'=>$summary], JSON_UNESCAPED_UNICODE);
+  $items = $st->fetchAll(PDO::FETCH_ASSOC) ?: [];
+  echo json_encode(['ok'=>true,'items'=>$items], JSON_UNESCAPED_UNICODE);
 } catch(Throwable $e){
   http_response_code(500);
   echo json_encode(['ok'=>false,'error'=>'server error']);
