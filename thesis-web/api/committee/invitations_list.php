@@ -1,30 +1,38 @@
 <?php
-header('Content-Type: application/json; charset=UTF-8');
+require_once __DIR__ . '/../bootstrap.php';
 
-try {
-  // ---- TEMP: mock mode για να μην 500άρει ----
-  define('MOCK_MODE', true);
-
-  $thesis_id = $_GET['thesis_id'] ?? null;
-  if (!$thesis_id) { echo json_encode(['ok'=>false,'error'=>'thesis_id required']); exit; }
-
-  if (MOCK_MODE) {
-    echo json_encode(['ok'=>true,'items'=>[]], JSON_UNESCAPED_UNICODE); exit;
+/* Fallback αν για κάποιο λόγο δεν φορτώθηκε ο guard από το bootstrap */
+if (!function_exists('require_login')) {
+  function require_login(): array {
+    if (session_status() !== PHP_SESSION_ACTIVE) @session_start();
+    if (empty($_SESSION['uid']) || empty($_SESSION['role'])) {
+      http_response_code(401);
+      header('Content-Type: application/json; charset=utf-8');
+      echo json_encode(['ok'=>false,'error'=>'Unauthorized'], JSON_UNESCAPED_UNICODE);
+      exit;
+    }
+    return ['id'=>$_SESSION['uid'], 'role'=>$_SESSION['role']];
   }
-
-  @require_once __DIR__ . '/../utils/bootstrap.php';
-  @require_once __DIR__ . '/../utils/auth_guard.php';
-  if (!function_exists('ensure_logged_in')) { function ensure_logged_in(){} }
-  if (!function_exists('assert_student_owns_thesis')) { function assert_student_owns_thesis($x){return true;} }
-
-  ensure_logged_in(); assert_student_owns_thesis($thesis_id);
-
-  $sql = "SELECT id, status, invited_at, responded_at
-          FROM committee_invitations WHERE thesis_id = ? ORDER BY invited_at DESC";
-  $st  = $pdo->prepare($sql); $st->execute([$thesis_id]);
-  $items = $st->fetchAll(PDO::FETCH_ASSOC) ?: [];
-  echo json_encode(['ok'=>true,'items'=>$items], JSON_UNESCAPED_UNICODE);
-} catch(Throwable $e){
-  http_response_code(500);
-  echo json_encode(['ok'=>false,'error'=>'server error']);
 }
+
+$user = require_login();
+
+$thesis_id = $_GET['thesis_id'] ?? '';
+if ($thesis_id === '') bad('thesis_id required', 422);
+
+// φοιτητής βλέπει μόνο τη δική του thesis
+if ($user['role'] === 'student') {
+  $own = $pdo->prepare("SELECT 1 FROM theses WHERE id=? AND student_id=?");
+  $own->execute([$thesis_id, $user['id']]);
+  if (!$own->fetchColumn()) bad('Forbidden', 403);
+}
+
+$stmt = $pdo->prepare("
+  SELECT id, thesis_id, person_id, status, invited_at, responded_at
+  FROM committee_invitations
+  WHERE thesis_id=?
+  ORDER BY invited_at DESC
+");
+$stmt->execute([$thesis_id]);
+
+ok(['items' => $stmt->fetchAll()]);
