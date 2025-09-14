@@ -4,8 +4,11 @@
   <meta charset="utf-8" />
   <title>Πίνακας Φοιτητή/τριας</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <!-- ΣΩΣΤΟ PATH ΓΙΑ CSS -->
   <link rel="stylesheet" href="./css/styles.css?v=3">
+  <style>
+    /* για status-aware εμφάνιση/απόκρυψη */
+    .hidden { display: none !important; }
+  </style>
 </head>
 
 <body class="student">
@@ -30,7 +33,7 @@
   <!-- 2) ΕΠΕΞΕΡΓΑΣΙΑ ΠΡΟΦΙΛ -->
   <section id="pane-profile" class="card" hidden>
     <h3 style="margin-top:0">Επεξεργασία Προφίλ</h3>
-    <form id="profileForm" class="row" style="gap:.6rem; max-width:720px">
+    <form id="profileForm" class="row" style="gap:.6rem; max-width:720px" autocomplete="off">
       <label class="field">
         <span>Email επικοινωνίας</span>
         <input type="email" name="email" required />
@@ -62,7 +65,7 @@
       <h3 style="margin-top:0">Υπό ανάθεση — Επιλογή μελών τριμελούς</h3>
 
       <!-- Αναζήτηση διδασκόντων -->
-      <form id="teacherSearchF" class="row" style="align-items:end">
+      <form id="teacherSearchF" class="row" style="align-items:end" autocomplete="off">
         <label style="grid-column:1/-1">
           <span>Αναζήτηση διδασκόντων (όνομα ή email)</span>
           <input name="q" placeholder="π.χ. Γάμμα ή gamma@uni.gr" />
@@ -75,17 +78,17 @@
       <div id="teacherResults" class="card" style="padding:.6rem"></div>
 
       <!-- Γρήγορη πρόσκληση -->
-      <form id="inviteF" class="card" style="padding:12px;margin-top:.6rem">
+      <form id="inviteF" class="card" style="padding:12px;margin-top:.6rem" autocomplete="off">
         <label>person_id (UUID από persons)
           <input name="person_id" placeholder="π.χ. 2b0b3e24-...." />
         </label>
         <button class="btn" type="submit">Αποστολή πρόσκλησης</button>
         <div id="inviteMsg" class="muted" style="margin-top:.5rem"></div>
-        <small class="muted">Μόλις 2 μέλη αποδεχθούν, η ΔΕ γίνεται «Ενεργή» αυτόματα (trigger).</small>
+        <small class="muted">Μόλις 2 μέλη αποδεχθούν και υπάρχει επιβλέπων, η ΔΕ γίνεται «Ενεργή» και ακυρώνονται οι υπόλοιπες εκκρεμείς προσκλήσεις.</small>
       </form>
     </section>
 
-    <!-- ΥΠΟ ΕΞΕΤΑΣΗ — Υλικό -->
+    <!-- ΥΠΟ ΕΞΕΤΑΣΗ — Ανάρτηση υλικού -->
     <section class="card">
       <h3 style="margin-top:0">Υπό εξέταση — Ανάρτηση υλικού</h3>
 
@@ -101,22 +104,22 @@
         </div>
       </form>
 
-      <!-- Λίστα ανεβασμένων drafts -->
-      <div id="draftList" class="card" style="margin-top:.6rem; padding:.6rem"></div>
+      <!-- Λίστα πόρων (drafts + links) -->
+      <div id="resourcesList" class="card" style="margin-top:.6rem; padding:.6rem"></div>
 
       <!-- Καταχώρηση πόρου ως link -->
-      <form id="resourceF" class="row" style="margin-top:.6rem">
+      <form id="resourceF" class="row" style="margin-top:.6rem" autocomplete="off">
         <label>
           <span>Είδος</span>
           <select name="kind">
-            <option value="draft">Πρόχειρο κείμενο (draft)</option>
+            <option value="link" selected>Σύνδεσμος (link)</option>
             <option value="code">Κώδικας</option>
             <option value="video">Βίντεο</option>
             <option value="image">Εικόνα</option>
             <option value="other">Άλλο</option>
           </select>
         </label>
-        <label>
+        <label style="grid-column:1/-1">
           <span>Σύνδεσμος (URL)</span>
           <input name="url_or_path" placeholder="https://drive.google.com/..." />
         </label>
@@ -130,7 +133,7 @@
     <!-- ΥΠΟ ΕΞΕΤΑΣΗ — Παρουσίαση -->
     <section class="card">
       <h3 style="margin-top:0">Υπό εξέταση — Ημερομηνία παρουσίασης</h3>
-      <form id="scheduleF" class="row">
+      <form id="scheduleF" class="row" autocomplete="off">
         <label>
           <span>Ημ/νία & ώρα</span>
           <input type="datetime-local" name="when_dt" />
@@ -150,14 +153,14 @@
           <button class="btn" type="submit">Καταχώρηση</button>
           <span id="scheduleMsg" class="muted"></span>
         </div>
-        <small class="muted" style="grid-column:1/-1">Οι κανόνες 21–60 ημερών + ≥7 ημέρες προαναγγελίας ελέγχονται από triggers.</small>
+        <small class="muted" style="grid-column:1/-1">Οι κανόνες 21–60 ημερών + ≥7 ημέρες προαναγγελίας ελέγχονται από την εφαρμογή.</small>
       </form>
     </section>
 
     <!-- ΜΕΤΑ ΤΟΥΣ ΒΑΘΜΟΥΣ — Νημερτής -->
     <section class="card">
       <h3 style="margin-top:0">Μετά τους βαθμούς — Νημερτής</h3>
-      <form id="nimeritisF" class="row">
+      <form id="nimeritisF" class="row" autocomplete="off">
         <label style="grid-column:1/-1">
           <span>Σύνδεσμος Νημερτής (τελικό κείμενο)</span>
           <input name="nimeritis_url" placeholder="http://..." />

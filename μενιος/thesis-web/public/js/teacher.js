@@ -531,23 +531,21 @@ document.addEventListener('DOMContentLoaded', () => {
   window.__invActionsBound = true;
 
   document.addEventListener('click', async (e) => {
-    const btn = e.target.closest('.acceptInv, .rejectInv');
-    if (!btn) return;
+    const acc = e.target.closest('.acceptInv');
+    const rej = e.target.closest('.rejectInv');
+    if (!acc && !rej) return;
 
-    const art = btn.closest('article[data-inv]');
+    const art = e.target.closest('article[data-inv]');
     if (!art) return;
-
     const id = art.dataset.inv;
     if (!id) return;
 
-    const isAccept = btn.classList.contains('acceptInv');
-
-    if (!isAccept && !confirm('Σίγουρα θέλεις να απορρίψεις;')) return;
+    if (rej && !confirm('Σίγουρα θέλεις να απορρίψεις;')) return;
 
     try {
       const fd = new FormData();
       fd.append('invitation_id', id);
-      fd.append('action', isAccept ? 'accept' : 'decline');
+      fd.append('action', acc ? 'accept' : 'decline');
 
       const res = await fetch(`${API_COMMITTEE}/respond.php`, {
         method: 'POST',
@@ -555,33 +553,25 @@ document.addEventListener('DOMContentLoaded', () => {
         credentials: 'same-origin'
       });
 
-      // Προσπάθησε να διαβάσεις JSON ανεξαρτήτως status
-      const j = await safeJson(res) || {};
-
-      // Επιτυχία αν:
-      // 1) ok:true, ή
-      // 2) code === 'already_responded', ή
-      // 3) HTTP 409 (ήδη απαντήθηκε) όταν ο server το επιστρέφει έτσι
-      const already =
-        j.code === 'already_responded' ||
-        /already/i.test(String(j.message || j.error || ''));
-
-      if ((res.ok && (j.ok === true || already)) || (!res.ok && res.status === 409)) {
-        // Καθάρισε κάρτα + empty-state
-        art.remove();
-        const box = document.getElementById('invitationsList');
-        if (box && !box.querySelector('article[data-inv]')) {
-          box.textContent = 'Δεν υπάρχουν προσκλήσεις.';
-        }
-        if (isAccept) loadThesesList(); // ανανέωση λίστας διπλωματικών μετά από αποδοχή
+      const txt = await res.text();
+      let j = null; try { j = txt ? JSON.parse(txt) : null; } catch {}
+      if (!res.ok || !j || j.ok !== true) {
+        const msg = (j && j.error) || `HTTP ${res.status}`;
+        alert(msg);
         return;
       }
 
-      // Αλλιώς δείξε σαφές σφάλμα
-      alert(j.error || j.message || `Σφάλμα (${res.status})`);
+      // UI update
+      art.remove();
+      const box = document.getElementById('invitationsList');
+      if (box && !box.querySelector('article[data-inv]')) {
+        box.textContent = 'Δεν υπάρχουν προσκλήσεις.';
+      }
+      if (acc) loadThesesList();
+
     } catch (err) {
       console.error(err);
-      alert('Σφάλμα.');
+      alert('Σφάλμα δικτύου.');
     }
   });
 })();

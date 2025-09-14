@@ -1,30 +1,47 @@
 <?php
-header('Content-Type: application/json; charset=UTF-8');
+declare(strict_types=1);
+
+require_once __DIR__ . '/../bootstrap.php';
+header('Content-Type: application/json; charset=utf-8');
 
 try {
-  define('MOCK_MODE', true);
+  $pdo = db();
+  $me  = require_login();
 
-  $thesis_id = $_GET['thesis_id'] ?? null;
-  if (!$thesis_id) { echo json_encode(['ok'=>false,'error'=>'thesis_id required']); exit; }
+  $thesisId = trim((string)($_GET['thesis_id'] ?? ''));
+  if ($thesisId === '') bad('Bad request', 400);
 
-  if (MOCK_MODE) {
-    echo json_encode(['ok'=>true,'summary'=>null], JSON_UNESCAPED_UNICODE); exit;
+  // access control ίδιο όπως πάνω (συνάρτηση αν θέλεις)
+  $can = false;
+  if ($me['role'] === 'student') {
+    $st = $pdo->prepare('SELECT 1 FROM theses WHERE id=? AND student_id=? LIMIT 1');
+    $st->execute([$thesisId, $me['id']]);
+    $can = (bool)$st->fetchColumn();
+  } else if ($me['role'] === 'teacher' || $me['role'] === 'secretariat') {
+    $st = $pdo->prepare('SELECT 1 FROM theses WHERE id=? AND supervisor_id=? LIMIT 1');
+    $st->execute([$thesisId, $me['id']]);
+    $can = (bool)$st->fetchColumn();
+    if (!$can) {
+      $st = $pdo->prepare('
+        SELECT 1 FROM committee_members cm
+        JOIN persons p ON p.id = cm.person_id
+        WHERE cm.thesis_id=? AND p.user_id=? LIMIT 1
+      ');
+      $st->execute([$thesisId, $me['id']]);
+      $can = (bool)$st->fetchColumn();
+    }
   }
+  if (!$can) bad('Forbidden', 403);
 
-  @require_once __DIR__ . '/../utils/bootstrap.php';
-  @require_once __DIR__ . '/../utils/auth_guard.php';
-  if (!function_exists('ensure_logged_in')) { function ensure_logged_in(){} }
-  if (!function_exists('assert_student_owns_thesis')) { function assert_student_owns_thesis($x){return true;} }
+  $q = $pdo->prepare('
+    SELECT COUNT(*) AS cnt, COALESCE(AVG(total),0) AS avg_total
+      FROM grades
+     WHERE thesis_id = ?
+  ');
+  $q->execute([$thesisId]);
+  $summary = $q->fetch(PDO::FETCH_ASSOC) ?: ['cnt'=>0, 'avg_total'=>0];
 
-  ensure_logged_in(); assert_student_owns_thesis($thesis_id);
-
-  $sql = "SELECT COUNT(*) AS cnt, AVG(total_score) AS avg_total FROM grades WHERE thesis_id = ?";
-  $st = $pdo->prepare($sql); $st->execute([$thesis_id]);
-  $row = $st->fetch(PDO::FETCH_ASSOC);
-  $summary = ($row && (int)$row['cnt']>0) ? ['cnt'=>(int)$row['cnt'], 'avg_total'=> ($row['avg_total']!==null?(float)$row['avg_total']:null)] : null;
-
-  echo json_encode(['ok'=>true,'summary'=>$summary], JSON_UNESCAPED_UNICODE);
-} catch(Throwable $e){
-  http_response_code(500);
-  echo json_encode(['ok'=>false,'error'=>'server error']);
+  ok(['summary' => $summary]);
+} catch (Throwable $e) {
+  bad($e->getMessage(), 500);
 }

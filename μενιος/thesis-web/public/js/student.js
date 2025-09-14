@@ -1,43 +1,57 @@
 // public/js/student.js
 import { apiGet, apiPost, guardRole } from './auth.js';
 
-const $ = (s) => document.querySelector(s);
+const $   = (s) => document.querySelector(s);
 const fmt = (d) => (d ? new Date(d).toLocaleString() : '—');
 const esc = (s = '') =>
   String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
+/* ---------------- State ---------------- */
 let CURRENT_THESIS = null;
 
 /* ---------------- Helpers for flexible API payloads ---------------- */
-const getItems   = (r) => (r?.data?.items ?? r?.items ?? []);
-const getItem    = (r) => (r?.data?.item  ?? r?.item  ?? null);
+const getItems   = (r) => (r?.data?.items   ?? r?.items   ?? []);
+const getItem    = (r) => (r?.data?.item    ?? r?.item    ?? null);
 const getSummary = (r) => (r?.data?.summary ?? r?.summary ?? {});
-const getUser    = (r) => (r?.data?.user ?? r?.user ?? {});
-const getThesis  = (r) => (r?.data?.thesis ?? r?.thesis ?? null);
+const getUser    = (r) => (r?.data?.user    ?? r?.user    ?? {});
+const getThesis  = (r) => (r?.data?.thesis  ?? r?.thesis  ?? null);
 
 function timeAgo(dateStr) {
   if (!dateStr) return '—';
   const now = new Date();
   const d = new Date(dateStr);
   const ms = Math.max(0, now - d);
-  const m = Math.floor(ms / 60000);
-  const h = Math.floor(m / 60);
+  const m  = Math.floor(ms / 60000);
+  const h  = Math.floor(m / 60);
   const dd = Math.floor(h / 24);
   if (dd >= 1) return `πριν ${dd} ${dd === 1 ? 'ημέρα' : 'ημέρες'}`;
-  if (h >= 1) return `πριν ${h} ${h === 1 ? 'ώρα' : 'ώρες'}`;
+  if (h  >= 1) return `πριν ${h}  ${h  === 1 ? 'ώρα'  : 'ώρες'}`;
   return `πριν ${m} ${m === 1 ? 'λεπτό' : 'λεπτά'}`;
 }
 
+/* Badge για ΚΑΤΑΣΤΑΣΗ ΔΙΠΛΩΜΑΤΙΚΗΣ */
 function statusBadge(s) {
   const map = {
     under_assignment: 'Υπό ανάθεση',
-    active: 'Ενεργή',
-    under_review: 'Υπό εξέταση',
-    completed: 'Περατωμένη',
-    canceled: 'Ακυρωμένη',
+    active:           'Ενεργή',
+    under_review:     'Υπό εξέταση',
+    completed:        'Περατωμένη',
+    canceled:         'Ακυρωμένη',
   };
   const label = map[s] || s || '—';
   return `<span style="display:inline-block;background:#1f2937;color:#e5e7eb;border-radius:.4rem;padding:.15rem .5rem;font-size:.85em">${label}</span>`;
+}
+
+/* Badge για ΚΑΤΑΣΤΑΣΗ ΠΡΟΣΚΛΗΣΗΣ */
+function inviteStatusBadge(s) {
+  const map = {
+    pending:  'Σε αναμονή',
+    accepted: 'Αποδεκτή',
+    declined: 'Απορρίφθηκε',
+    canceled: 'Ακυρώθηκε',
+  };
+  const label = map[s] || s || '—';
+  return `<span style="display:inline-block;background:#111827;color:#e5e7eb;border-radius:.4rem;padding:.15rem .5rem;font-size:.85em">${label}</span>`;
 }
 
 function ensureBox(sel, title) {
@@ -93,11 +107,8 @@ async function loadMyThesis() {
   const out = $('#thesis');
   out.innerHTML = 'Φόρτωση...';
 
-  const res = await apiGet('/theses/list.php'); // επιστρέφει τις διπλωματικές του φοιτητή
-  if (!res?.ok) {
-    out.textContent = res?.error || 'Σφάλμα φόρτωσης';
-    return null;
-  }
+  const res = await apiGet('/theses/list.php');
+  if (!res?.ok) { out.textContent = res?.error || 'Σφάλμα φόρτωσης'; return null; }
 
   const items = getItems(res);
   if (!items.length) {
@@ -128,24 +139,26 @@ async function loadInvitations(thesis_id) {
   const res = await apiGet(`/committee/invitations_list.php?thesis_id=${encodeURIComponent(thesis_id)}`);
   if (!res?.ok) { box.textContent = res?.error || 'Σφάλμα'; return; }
 
-  // προαιρετικό header με έξτρα πληροφορίες
+  // Προαιρετικό header
   const th = getThesis(res);
   const header = th
-    ? `<div style="margin-bottom:.35rem;opacity:.85">
-         <small><b>Επιβλέπων:</b> ${esc(th.supervisor_name || '—')}</small>
-       </div>`
+    ? `<div style="margin-bottom:.35rem;opacity:.85"><small><b>Επιβλέπων:</b> ${esc(th.supervisor_name || '—')}</small></div>`
     : '';
 
   const rows = getItems(res);
   if (!rows.length) { box.innerHTML = header + '<em>Δεν υπάρχουν προσκλήσεις ακόμη.</em>'; return; }
 
-  box.innerHTML = header + rows.map(r => `
-    <div class="card" style="padding:.6rem;margin:.3rem 0">
-      <div><strong>Μέλος:</strong> ${esc(r.member_name || r.person_name || '—')}</div>
-      <div><strong>Κατάσταση:</strong> ${statusBadge(r.status)}</div>
-      <div><small>Πρόσκληση: ${fmt(r.invited_at)}${r.responded_at ? ' · Απάντηση: ' + fmt(r.responded_at) : ''}</small></div>
-    </div>
-  `).join('');
+  box.innerHTML = header + rows.map(r => {
+    const st = r.inv_status ?? r.status ?? null; // <- ΔΙΑΒΑΖΕΙ ΤΟ inv_status
+    const who = r.member_name || r.person_name || `${esc(r.first_name || '')} ${esc(r.last_name || '')}`.trim() || '—';
+    return `
+      <div class="card" style="padding:.6rem;margin:.3rem 0">
+        <div><strong>Μέλος:</strong> ${esc(who)}</div>
+        <div><strong>Κατάσταση:</strong> ${inviteStatusBadge(st)}</div>
+        <div><small>Πρόσκληση: ${fmt(r.invited_at)}${r.responded_at ? ' · Απάντηση: ' + fmt(r.responded_at) : ''}</small></div>
+      </div>
+    `;
+  }).join('');
 }
 
 async function loadMembers(thesis_id) {
@@ -286,14 +299,14 @@ async function getThesisId() {
   return null;
 }
 
-// Πρόσκληση μέλους (person_id ή user_id) από τη «Γρήγορη πρόσκληση»
+// Γρήγορη πρόσκληση (person_id ή user_id)
 function wireInviteForm() {
   const form = $('#inviteF'); if (!form) return;
 
   if (!form.querySelector('[name="thesis_id"]') && CURRENT_THESIS) {
     const hidden = document.createElement('input');
-    hidden.type = 'hidden';
-    hidden.name = 'thesis_id';
+    hidden.type  = 'hidden';
+    hidden.name  = 'thesis_id';
     hidden.value = CURRENT_THESIS.id;
     form.appendChild(hidden);
   }
@@ -309,14 +322,13 @@ function wireInviteForm() {
   });
 }
 
-// Αναζήτηση διδασκόντων & άμεση πρόσκληση (με user_id)
+// Αναζήτηση διδασκόντων & άμεση πρόσκληση (user_id)
 function wireTeacherSearch() {
   const searchF = $('#teacherSearchF');
   const results = $('#teacherResults');
   const msg     = $('#teacherSearchMsg');
   if (!searchF || !results) return;
 
-  // submit: εκτέλεση αναζήτησης
   searchF.addEventListener('submit', async (e) => {
     e.preventDefault();
     msg.textContent = 'Αναζήτηση...';
@@ -343,11 +355,8 @@ function wireTeacherSearch() {
     `).join('');
   });
 
-  // click: χειρισμός «Πρόσκληση»
   results.addEventListener('click', async (e) => {
-    const btn = e.target.closest('[data-invite-user]');
-    if (!btn) return;
-
+    const btn = e.target.closest('[data-invite-user]'); if (!btn) return;
     btn.disabled = true;
 
     const thesis_id = await getThesisId();
@@ -360,29 +369,25 @@ function wireTeacherSearch() {
     const user_id = btn.getAttribute('data-invite-user');
     const res = await apiPost('/committee/invite.php', { thesis_id, user_id });
 
-    if (res?.ok && res.already) {
-      btn.textContent = 'Ήδη υπάρχει ✔';
-    } else if (res?.ok) {
-      btn.textContent = 'Στάλθηκε ✔';
-    } else {
-      btn.textContent = res?.error || 'Σφάλμα';
-    }
+    if (res?.ok && res.already)      btn.textContent = 'Ήδη υπάρχει ✔';
+    else if (res?.ok)                btn.textContent = 'Στάλθηκε ✔';
+    else                             btn.textContent = res?.error || 'Σφάλμα';
 
     refreshThesisExtras();
     setTimeout(() => { btn.disabled = false; btn.textContent = 'Πρόσκληση'; }, 1200);
   });
 }
 
-// Upload draft (multipart) & δήλωση πόρων ως link
+// Upload draft & πόροι
 function wireDraftAndResources() {
-  const draftF = $('#draftUploadF');
+  const draftF  = $('#draftUploadF');
   const draftMsg = $('#draftUploadMsg');
   if (draftF) {
     draftF.addEventListener('submit', async (e) => {
       e.preventDefault();
       if (draftMsg) draftMsg.textContent = 'Μεταφόρτωση...';
       const thesis_id = await getThesisId();
-      const fd = new FormData(draftF); // περιέχει name="file"
+      const fd = new FormData(draftF); // name="file"
       fd.append('thesis_id', thesis_id);
       fd.append('kind', 'draft');
       const res = await apiPost('/resources/create.php', fd);
@@ -390,7 +395,7 @@ function wireDraftAndResources() {
     });
   }
 
-  const resF = $('#resourceF');
+  const resF  = $('#resourceF');
   const resMsg = $('#resourceMsg');
   if (resF) {
     resF.addEventListener('submit', async (e) => {
