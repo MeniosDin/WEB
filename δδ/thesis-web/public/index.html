@@ -1,0 +1,20 @@
+<!doctype html><html lang="el"><meta charset="utf-8">
+<title>Thesis Portal</title>
+<link rel="stylesheet" href="css/styles.css">
+<body>
+<main class="center">
+<img src="assets/logo.png" alt="Logo" class="logo">
+<h1>Thesis Management</h1>
+<p>Συνέχισε στο λογαριασμό σου</p>
+<a class="btn" href="login.html">Σύνδεση</a>
+</main>
+<script type="module">
+import { me } from './js/auth.js';
+me().then(u => {
+if (!u) return;
+const m = { teacher:'teacher.html', student:'student.html', secretariat:'secretariat.html' };
+location.replace(m[u.role] || 'app.html');
+});
+</script>
+</body></html>
+
