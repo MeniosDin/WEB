@@ -30,28 +30,33 @@ function find_student_by_query(PDO $pdo, string $q) {
   // 1) ακριβές ΑΜ
   $st = $pdo->prepare("
     SELECT id, name, student_number
-    FROM users
-    WHERE role='student' AND student_number = :q
-    LIMIT 1
+      FROM users
+     WHERE role='student' AND student_number = :q
+     LIMIT 1
   ");
-  $st->execute([':q'=>$q]);
+  $st->bindValue(':q', $q);
+  $st->execute();
   if ($row = $st->fetch(PDO::FETCH_ASSOC)) return $row;
 
   // 2) ή μέρος ονόματος
   $st = $pdo->prepare("
     SELECT id, name, student_number
-    FROM users
-    WHERE role='student' AND name LIKE :q
-    ORDER BY name
-    LIMIT 1
+      FROM users
+     WHERE role='student' AND name LIKE :q
+     ORDER BY name
+     LIMIT 1
   ");
-  $st->execute([':q'=>'%'.$q.'%']);
+  $st->bindValue(':q', '%'.$q.'%');
+  $st->execute();
   return $st->fetch(PDO::FETCH_ASSOC) ?: null;
 }
 
 function topic_belongs_to(PDO $pdo, string $topicId, string $teacherId): bool {
-  $st = $pdo->prepare("SELECT 1 FROM topics WHERE id=:id AND supervisor_id=:me LIMIT 1");
-  $st->execute([':id'=>$topicId, ':me'=>$teacherId]);
+  $sql = "SELECT 1 FROM topics WHERE id = :id AND supervisor_id = :me LIMIT 1";
+  $st  = $pdo->prepare($sql);
+  $st->bindValue(':id', $topicId);
+  $st->bindValue(':me', $teacherId);
+  $st->execute();
   return (bool)$st->fetchColumn();
 }
 
@@ -71,7 +76,8 @@ if ($method==='GET' && ($action==='' || $action==='list')) {
     WHERE t.supervisor_id = :me
     ORDER BY t.updated_at DESC, t.created_at DESC
   ");
-  $st->execute([':me'=>$me['id']]);
+  $st->bindValue(':me', $me['id']);
+  $st->execute();
   j_ok($st->fetchAll(PDO::FETCH_ASSOC));
 }
 
@@ -107,13 +113,12 @@ if ($method === 'POST' && $action === 'create') {
     VALUES
       (UUID(), :me, :title, :summary, :pdf, :av, NOW(), NOW())
   ");
-  $st->execute([
-    ':me'      => $me['id'],
-    ':title'   => $title,
-    ':summary' => $summary,
-    ':pdf'     => $pdfPath,
-    ':av'      => $avail,
-  ]);
+  $st->bindValue(':me',    $me['id']);
+  $st->bindValue(':title', $title);
+  $st->bindValue(':summary', $summary);
+  $st->bindValue(':pdf',   $pdfPath);
+  $st->bindValue(':av',    $avail, PDO::PARAM_INT);
+  $st->execute();
 
   j_ok(['saved'=>true], 201);
 }
@@ -127,7 +132,8 @@ if ($method === 'POST' && $action === 'update') {
 
   // ιδιοκτησία + τρέχον pdf
   $st = $pdo->prepare("SELECT spec_pdf_path, supervisor_id FROM topics WHERE id=:id LIMIT 1");
-  $st->execute([':id'=>$id]);
+  $st->bindValue(':id', $id);
+  $st->execute();
   $row = $st->fetch(PDO::FETCH_ASSOC);
   if (!$row) j_err('Δεν βρέθηκε', 404);
   if ((string)$row['supervisor_id'] !== (string)$me['id']) j_err('Forbidden', 403);
@@ -187,7 +193,8 @@ if ($method==='POST' && $action==='delete') {
   if ($id === '') j_err('Λείπει id', 422);
 
   $st = $pdo->prepare("SELECT spec_pdf_path, supervisor_id FROM topics WHERE id=:id LIMIT 1");
-  $st->execute([':id'=>$id]);
+  $st->bindValue(':id', $id);
+  $st->execute();
   $row = $st->fetch(PDO::FETCH_ASSOC);
   if (!$row) j_err('Δεν βρέθηκε', 404);
   if ((string)$row['supervisor_id'] !== (string)$me['id']) j_err('Forbidden', 403);
@@ -199,7 +206,8 @@ if ($method==='POST' && $action==='delete') {
   }
 
   $del = $pdo->prepare("DELETE FROM topics WHERE id=:id");
-  $del->execute([':id'=>$id]);
+  $del->bindValue(':id', $id);
+  $del->execute();
 
   j_ok(['deleted'=>true]);
 }
@@ -219,19 +227,57 @@ if ($method==='POST' && $action==='assign_student') {
   $stud = find_student_by_query($pdo, $query);
   if (!$stud) j_err('Δεν βρέθηκε φοιτητής', 404);
 
-  $up = $pdo->prepare("
-    UPDATE topics
-    SET provisional_student_id = :sid,
-        provisional_since      = NOW(),
-        updated_at             = NOW()
-    WHERE id = :id
-      AND supervisor_id = :me
-    LIMIT 1
-  ");
-  $up->execute([':sid'=>$stud['id'], ':id'=>$topicId, ':me'=>$me['id']]);
+  try {
+    $pdo->beginTransaction();
 
-  if ($up->rowCount() !== 1) j_err('Η ανάθεση δεν ολοκληρώθηκε', 409);
-  j_ok(['assigned'=>true, 'student'=>$stud]);
+    // Προσωρινή ανάθεση στο topic
+    $up = $pdo->prepare("
+      UPDATE topics
+         SET provisional_student_id = :sid,
+             provisional_since      = NOW(),
+             updated_at             = NOW()
+       WHERE id = :id
+         AND supervisor_id = :me
+       LIMIT 1
+    ");
+    $up->bindValue(':sid', $stud['id']);
+    $up->bindValue(':id',  $topicId);
+    $up->bindValue(':me',  $me['id']);
+    $up->execute();
+
+    if ($up->rowCount() !== 1) {
+      $pdo->rollBack();
+      j_err('Η ανάθεση δεν ολοκληρώθηκε', 409);
+    }
+
+    // === UPSERT στη theses: δημιουργεί αν δεν υπάρχει
+    // ΣΗΜ.: Δεν επιτρέπεται το ίδιο named placeholder δύο φορές -> :sid1 & :sid2
+    $ins = $pdo->prepare("
+      INSERT INTO theses (id, topic_id, student_id, supervisor_id, status, created_at)
+      SELECT UUID(), t.id, :sid1, t.supervisor_id, 'under_assignment', NOW()
+        FROM topics t
+       WHERE t.id = :tid
+         AND NOT EXISTS (
+               SELECT 1 FROM theses th
+                WHERE th.topic_id = t.id AND th.student_id = :sid2
+             )
+    ");
+    $ins->bindValue(':sid1', $stud['id']);
+    $ins->bindValue(':sid2', $stud['id']);
+    $ins->bindValue(':tid',  $topicId);
+    $ins->execute();
+    $created = ($ins->rowCount() > 0);
+
+    $pdo->commit();
+    j_ok([
+      'assigned'       => true,
+      'student'        => $stud,
+      'created_thesis' => $created
+    ]);
+  } catch (Throwable $e) {
+    if ($pdo?->inTransaction()) $pdo->rollBack();
+    j_err('SQL error: '.$e->getMessage(), 500);
+  }
 }
 
 /* =========================================================
@@ -243,19 +289,51 @@ if ($method==='POST' && $action==='unassign_student') {
 
   if (!topic_belongs_to($pdo, $topicId, $me['id'])) j_err('Δεν βρέθηκε ή δεν σας ανήκει', 404);
 
-  $up = $pdo->prepare("
-    UPDATE topics
-    SET provisional_student_id = NULL,
-        provisional_since      = NULL,
-        updated_at             = NOW()
-    WHERE id = :id
-      AND supervisor_id = :me
-    LIMIT 1
-  ");
-  $up->execute([':id'=>$topicId, ':me'=>$me['id']]);
+  try {
+    $pdo->beginTransaction();
 
-  if ($up->rowCount() !== 1) j_err('Δεν έγινε αφαίρεση', 409);
-  j_ok(['unassigned'=>true]);
+    // Πάρε ποιος ήταν ο προσωρινός φοιτητής
+    $sel = $pdo->prepare("SELECT provisional_student_id FROM topics WHERE id=:id FOR UPDATE");
+    $sel->bindValue(':id', $topicId);
+    $sel->execute();
+    $prev = $sel->fetch(PDO::FETCH_ASSOC);
+    $prevSid = $prev['provisional_student_id'] ?? null;
+
+    // Καθάρισε προσωρινή ανάθεση
+    $up = $pdo->prepare("
+      UPDATE topics
+         SET provisional_student_id = NULL,
+             provisional_since      = NULL,
+             updated_at             = NOW()
+       WHERE id = :id
+         AND supervisor_id = :me
+       LIMIT 1
+    ");
+    $up->bindValue(':id', $topicId);
+    $up->bindValue(':me', $me['id']);
+    $up->execute();
+
+    // Αν υπήρχε προσωρινός φοιτητής, καθάρισε και τυχόν ΔΕ που ήταν ακόμη under_assignment
+    $deleted = 0;
+    if ($prevSid) {
+      $del = $pdo->prepare("
+        DELETE FROM theses
+         WHERE topic_id  = :tid
+           AND student_id = :sid
+           AND status = 'under_assignment'
+      ");
+      $del->bindValue(':tid', $topicId);
+      $del->bindValue(':sid', $prevSid);
+      $del->execute();
+      $deleted = $del->rowCount();
+    }
+
+    $pdo->commit();
+    j_ok(['unassigned'=>true, 'deleted_theses_rows'=>$deleted]);
+  } catch (Throwable $e) {
+    if ($pdo?->inTransaction()) $pdo->rollBack();
+    j_err('SQL error: '.$e->getMessage(), 500);
+  }
 }
 
 /* =========================================================

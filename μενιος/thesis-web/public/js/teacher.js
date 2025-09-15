@@ -1,20 +1,25 @@
-// THESIS_WEB/public/js/teacher.js (ενοποιημένο)
+// THESIS_WEB/public/js/teacher.js
 
-// === Ρυθμίσεις βάσης (ΑΛΛΑΞΕ το BASE αν ο φάκελός σου διαφέρει) ===
+/* =========================
+   Βασικές Ρυθμίσεις
+   (Προσαρμόζεις μόνο το BASE αν ο φάκελος διαφέρει)
+   ========================= */
 const BASE  = '/thesis-web';
 const API   = `${BASE}/api/prof`;
 const PUB   = `${BASE}/public`;
-// Endpoints επιτροπής
 const API_COMMITTEE = `${BASE}/api/committee`;
+const API_THESES_ASSIGN = `${BASE}/api/theses/assign.php`;
 
-/* ---------------- Βοηθητικά ---------------- */
+/* =========================
+   Βοηθητικά
+   ========================= */
 function esc(s) {
   return String(s).replace(/[&<>"']/g, (m) => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
   }[m]));
 }
 
-// Διαβάζει πρώτα raw text και μετά προσπαθεί JSON.parse ώστε να μην “σκάνε” τα fetch
+// Διαβάζει ως text και μετά δοκιμάζει JSON.parse ώστε να μη «σκάει» το fetch
 async function safeJson(res) {
   const txt = await res.text();
   try { return txt ? JSON.parse(txt) : null; }
@@ -25,55 +30,62 @@ async function safeJson(res) {
 }
 
 /* =========================
-   ΘΕΜΑΤΑ (topics)
+   ΘΕΜΑΤΑ (Topics)
    ========================= */
 export async function loadTeacherTopics() {
   const box = document.getElementById('topics');
   if (!box) return;
 
+  box.textContent = 'Φόρτωση…';
   try {
     const res = await fetch(`${API}/topics.php?action=list`, {
       credentials: 'same-origin',
       headers: { 'Accept': 'application/json' }
     });
     const j = await safeJson(res);
-    if (!j || j.ok !== true) { box.textContent = (j && j.error) || 'Σφάλμα'; return; }
+    if (!j || j.ok !== true) {
+      box.textContent = (j && j.error) || 'Σφάλμα';
+      return;
+    }
 
     const items = j.data || [];
     if (!items.length) { box.textContent = 'Δεν υπάρχουν θέματα.'; return; }
 
     box.innerHTML = items.map(t => {
-      // Διόρθωση URL για PDF
+      // Διόρθωση path για PDF
       let pdfHref = t.spec_pdf_path || null;
       if (pdfHref && pdfHref.startsWith('/uploads/')) {
         pdfHref = `${PUB}${pdfHref}`;
       }
 
-      // Φοιτητής αν έχει προσωρινή ανάθεση
-      let studentInfo = '';
-      if (t.provisional_student_id) {
-        studentInfo = `
-          <div style="margin-top:.5rem; font-size:.9rem; color:#6b7280">
-            <b>Προσωρινή ανάθεση σε:</b> ${esc(t.provisional_student_name || '')}
-            ${t.provisional_student_number ? `(${esc(t.provisional_student_number)})` : ''}
-            <button class="btn btn-sm danger unassignStudent" style="margin-left:.5rem">
-              Αφαίρεση
-            </button>
-          </div>`;
-      } else {
-        studentInfo = `
-          <div style="margin-top:.5rem; font-size:.9rem;">
-            <button class="btn btn-sm assignStudent">Ανάθεση σε φοιτητή</button>
-          </div>`;
-      }
+      // Προσωρινή ανάθεση — δείξε στοιχεία & δράσεις
+      // Προσπαθούμε να έχουμε και user_id για "Οριστική ανάθεση"
+      const provUserId = t.provisional_student_user_id ?? t.provisional_student_id ?? null;
+      const provBlock = t.provisional_student_id ? `
+        <div style="margin-top:.6rem;font-size:.9rem;color:#9CA3AF">
+          <b>Προσωρινή ανάθεση σε:</b>
+          ${esc(t.provisional_student_name || '—')}
+          ${t.provisional_student_number ? `(${esc(t.provisional_student_number)})` : ''}
+          <button class="btn btn-sm danger unassignStudent" style="margin-left:.5rem">Αφαίρεση</button>
+          ${
+            provUserId
+              ? `<button class="btn btn-sm finalAssign" data-topic-id="${esc(t.id)}" data-student-user-id="${esc(provUserId)}" style="margin-left:.25rem">Οριστική ανάθεση</button>`
+              : ''
+          }
+        </div>
+      ` : `
+        <div style="margin-top:.6rem;font-size:.9rem;">
+          <button class="btn btn-sm assignStudent">Ανάθεση σε φοιτητή</button>
+        </div>
+      `;
 
       return `
         <article class="card" data-id="${esc(t.id)}" style="margin:.5rem 0;padding:1rem">
-          <h4 style="margin:0 0 .5rem 0">${esc(t.title || '—')}</h4>
+          <h4 style="margin:0 0 .35rem">${esc(t.title || '—')}</h4>
           <p style="margin:.25rem 0 .75rem 0">${esc(t.summary || '')}</p>
 
           <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
-            ${pdfHref ? `<a href="${esc(pdfHref)}" target="_blank" rel="noopener">Προδιαγραφή (PDF)</a>` : '<span style="opacity:.7">— κανένα PDF —</span>'}
+            ${pdfHref ? `<a href="${esc(pdfHref)}" target="_blank" rel="noopener">Προδιαγραφή (PDF)</a>` : '<span class="muted">— κανένα PDF —</span>'}
             <button class="btn btn-sm outline editPdf">Επεξεργασία PDF</button>
 
             <label style="margin-left:auto;display:flex;gap:.35rem;align-items:center">
@@ -85,17 +97,17 @@ export async function loadTeacherTopics() {
           </div>
 
           <!-- Inline PDF controls -->
-          <div class="pdfControls" style="display:none; margin-top:.75rem; padding:.75rem; border:1px dashed #374151; border-radius:8px;">
-            <div style="display:flex; gap:.5rem; align-items:center; flex-wrap:wrap">
+          <div class="pdfControls" style="display:none;margin-top:.75rem;padding:.75rem;border:1px dashed #374151;border-radius:8px;">
+            <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
               <input type="file" class="pdfFile" accept="application/pdf">
               <button class="btn btn-sm saveNewPdf">Αποθήκευση νέου PDF</button>
               ${t.spec_pdf_path ? `<button class="btn btn-sm danger removePdf">Διαγραφή PDF</button>` : ''}
               <button class="btn btn-sm secondary cancelPdf">Άκυρο</button>
-              <small class="pdfHint" style="opacity:.75">Μόνο PDF έως 10MB.</small>
+              <small class="pdfHint muted">Μόνο PDF έως 10MB.</small>
             </div>
           </div>
 
-          ${studentInfo}
+          ${provBlock}
         </article>
       `;
     }).join('');
@@ -106,7 +118,7 @@ export async function loadTeacherTopics() {
 }
 
 /* =========================
-   ΛΙΣΤΑ ΔΙΠΛΩΜΑΤΙΚΩΝ
+   ΛΙΣΤΑ ΔΙΠΛΩΜΑΤΙΚΩΝ (Teacher view)
    ========================= */
 async function loadThesesList() {
   const box = document.getElementById('thesesList');
@@ -114,7 +126,7 @@ async function loadThesesList() {
 
   const roleSel   = document.getElementById('thesisRole');
   const statusSel = document.getElementById('thesisStatus');
-  const role = roleSel?.value || '';
+  const role   = roleSel?.value || '';
   const status = statusSel?.value || '';
 
   const url = new URL(`${API}/theses.php`, window.location.origin);
@@ -131,7 +143,6 @@ async function loadThesesList() {
     });
     const j = await safeJson(res);
     if (!j || j.ok !== true) {
-      console.error('Theses list error:', j);
       box.textContent = (j && j.error) || 'Σφάλμα';
       return;
     }
@@ -141,24 +152,23 @@ async function loadThesesList() {
 
     box.innerHTML = items.map(t => {
       const title = t.topic_title || t.title || '—';
-      const roleLabel = (t.my_role === 'supervisor')
-        ? 'Επιβλέπων'
-        : (t.my_role === 'member' ? 'Μέλος τριμελούς' : '');
+      const roleLabel = (t.my_role === 'supervisor') ? 'Επιβλέπων' :
+                        (t.my_role === 'member')     ? 'Μέλος τριμελούς' : '';
 
       return `
-        <article class="card" data-thesis="${esc(t.id)}" style="margin:.5rem 0; padding:1rem">
-          <div style="display:flex; gap:1rem; align-items:baseline; flex-wrap:wrap">
+        <article class="card" data-thesis="${esc(t.id)}" style="margin:.5rem 0;padding:1rem">
+          <div style="display:flex;gap:1rem;align-items:baseline;flex-wrap:wrap">
             <h4 style="margin:0">${esc(title)}</h4>
-            ${roleLabel ? `<span style="opacity:.8">(${esc(roleLabel)})</span>` : ''}
-            <span style="margin-left:auto; opacity:.8">Κατάσταση: ${esc(t.status || '')}</span>
+            ${roleLabel ? `<span class="muted">(${esc(roleLabel)})</span>` : ''}
+            <span style="margin-left:auto" class="muted">Κατάσταση: ${esc(t.status || '')}</span>
           </div>
-          <div style="margin:.5rem 0; opacity:.9">
+          <div style="margin:.4rem 0">
             Φοιτητής: ${esc(t.student_name ?? '—')} ${t.student_number ? `(${esc(t.student_number)})` : ''}
           </div>
-          <div style="display:flex; gap:.5rem; flex-wrap:wrap">
+          <div style="display:flex;gap:.5rem;flex-wrap:wrap">
             <button class="btn btn-sm seeDetails">Λεπτομέρειες</button>
           </div>
-          <div class="thesisDetails" style="display:none; margin-top:.75rem"></div>
+          <div class="thesisDetails" style="display:none;margin-top:.75rem"></div>
         </article>
       `;
     }).join('');
@@ -168,9 +178,9 @@ async function loadThesesList() {
   }
 }
 
-// =========================
-// ΠΡΟΣΚΛΗΣΕΙΣ ΤΡΙΜΕΛΟΥΣ (Teacher mode)
-// =========================
+/* =========================
+   ΠΡΟΣΚΛΗΣΕΙΣ ΤΡΙΜΕΛΟΥΣ (Teacher mode)
+   ========================= */
 async function loadInvitations() {
   const box = document.getElementById('invitationsList');
   if (!box) return;
@@ -181,7 +191,6 @@ async function loadInvitations() {
       headers: { 'Accept': 'application/json' },
       credentials: 'same-origin'
     });
-
     if (!response.ok) {
       const txt = await response.text().catch(() => '');
       console.error('HTTP', response.status, txt);
@@ -195,28 +204,27 @@ async function loadInvitations() {
       return;
     }
 
-    // 👇 εδώ η κρίσιμη αλλαγή
+    // ανθεκτικό στο σχήμα {data:{items:[]}} ή {items:[]}
     const items = payload?.data?.items || payload?.items || [];
-    if (!items.length) {
-      box.textContent = 'Δεν υπάρχουν προσκλήσεις.';
-      return;
-    }
+    if (!items.length) { box.textContent = 'Δεν υπάρχουν προσκλήσεις.'; return; }
 
     box.innerHTML = items.map(i => `
-      <article class="card" data-inv="${esc(i.id || i.invitation_id)}" style="margin:.5rem 0; padding:1rem">
-        <div style="display:flex; gap:.5rem; align-items:baseline; flex-wrap:wrap">
+      <article class="card" data-inv="${esc(i.id || i.invitation_id)}" style="margin:.5rem 0;padding:1rem">
+        <div style="display:flex;gap:.5rem;align-items:baseline;flex-wrap:wrap">
           <h4 style="margin:0">${esc(i.topic_title || '—')}</h4>
-          <span style="opacity:.8">(${esc(i.supervisor_name || '—')})</span>
-          <span style="margin-left:auto; opacity:.8">Πρόσκληση: ${esc(i.invited_at || '—')}</span>
+          <span class="muted">(${esc(i.supervisor_name || '—')})</span>
+          <span style="margin-left:auto" class="muted">Πρόσκληση: ${esc(i.invited_at || '—')}</span>
         </div>
-        <div style="margin:.35rem 0; opacity:.9">
+        <div style="margin:.35rem 0">
           Φοιτητής: ${esc(i.student_name || '—')} ${i.student_number ? `(${esc(i.student_number)})` : ''}
         </div>
-        <div style="display:flex; gap:.5rem; flex-wrap:wrap">
-          ${i.status && i.status !== 'pending'
-            ? `<span class="muted">Κατάσταση: ${esc(i.status)}</span>`
-            : `<button class="btn btn-sm acceptInv">Αποδοχή</button>
-               <button class="btn btn-sm danger rejectInv">Απόρριψη</button>`}
+        <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+          ${
+            i.status && i.status !== 'pending'
+              ? `<span class="muted">Κατάσταση: ${esc(i.status)}</span>`
+              : `<button class="btn btn-sm acceptInv">Αποδοχή</button>
+                 <button class="btn btn-sm danger rejectInv">Απόρριψη</button>`
+          }
         </div>
       </article>
     `).join('');
@@ -226,67 +234,46 @@ async function loadInvitations() {
   }
 }
 
-
 /* =========================
-   CREATE NEW TOPIC (με προαιρετικό PDF)
+   Νέο Θέμα (με προαιρετικό PDF)
    ========================= */
 document.addEventListener('DOMContentLoaded', () => {
   const form = document.getElementById('newTopicForm');
   const fileInput = document.getElementById('spec_pdf');
 
-  // προαιρετικός έλεγχος αρχείου (τύπος/μέγεθος)
   if (fileInput) {
     fileInput.addEventListener('change', () => {
       const f = fileInput.files?.[0];
       if (!f) return;
-      if (f.type !== 'application/pdf') {
-        alert('Μόνο PDF επιτρέπεται.');
-        fileInput.value = '';
-        return;
-      }
-      const max = 10 * 1024 * 1024; // 10MB
-      if (f.size > max) {
-        alert('Το αρχείο ξεπερνά τα 10MB.');
-        fileInput.value = '';
-      }
+      if (f.type !== 'application/pdf') { alert('Μόνο PDF επιτρέπεται.'); fileInput.value = ''; return; }
+      const max = 10 * 1024 * 1024;
+      if (f.size > max) { alert('Το αρχείο ξεπερνά τα 10MB.'); fileInput.value = ''; }
     });
   }
-
   if (!form) return;
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
-
     try {
-      // Μαζεύουμε τα δεδομένα της φόρμας
       const fd = new FormData(form);
       fd.append('action', 'create');
 
-      // Αν τα inputs δεν έχουν name, φροντίζουμε εδώ:
-      const titleEl = form.querySelector('#title,[name="title"]');
+      const titleEl   = form.querySelector('#title,[name="title"]');
       const summaryEl = form.querySelector('#summary,[name="summary"]');
-      if (!fd.get('title') && titleEl) fd.set('title', titleEl.value.trim());
+      if (!fd.get('title')   && titleEl)   fd.set('title',   titleEl.value.trim());
       if (!fd.get('summary') && summaryEl) fd.set('summary', summaryEl.value.trim());
-
-      // default availability = 1
       if (!fd.get('is_available')) fd.append('is_available', '1');
 
-      // Αν λείπει name στο file input, βάλε χειροκίνητα
       if (fileInput && !fd.get('spec_pdf') && fileInput.files?.[0]) {
         fd.set('spec_pdf', fileInput.files[0]);
       }
 
-      const res = await fetch(`${API}/topics.php`, {
-        method: 'POST',
-        body: fd,
-        credentials: 'same-origin'
-      });
+      const res = await fetch(`${API}/topics.php`, { method:'POST', body: fd, credentials:'same-origin' });
       const j = await safeJson(res);
       if (!j || j.ok !== true) throw new Error((j && j.error) || 'Σφάλμα καταχώρισης.');
 
-      // καθάρισμα + ανανέωση
       form.reset();
-      if (typeof loadTeacherTopics === 'function') await loadTeacherTopics();
+      await loadTeacherTopics();
       alert('Το θέμα καταχωρήθηκε.');
     } catch (err) {
       alert(err.message || 'Κάτι πήγε στραβά.');
@@ -295,7 +282,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 /* =========================
-   Ενέργειες στη λίστα θεμάτων (edit / delete / toggle / pdf / assign)
+   Ενέργειες στη Λίστα Θεμάτων (edit/delete/toggle/pdf/assign/final-assign)
    ========================= */
 (function bindTopicActions(){
   if (document.readyState === 'loading') {
@@ -305,7 +292,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const box = document.getElementById('topics');
   if (!box) return;
 
-  // Clicks (edit / delete / assign / unassign / pdf panel open/close)
   box.addEventListener('click', async (e) => {
     const art = e.target.closest('article[data-id]');
     if (!art) return;
@@ -318,18 +304,18 @@ document.addEventListener('DOMContentLoaded', () => {
       const fd = new FormData();
       fd.append('action', 'delete');
       fd.append('id', id);
-      const res = await fetch(`${API}/topics.php`, { method:'POST', body: fd, credentials: 'same-origin' });
+      const res = await fetch(`${API}/topics.php`, { method:'POST', body: fd, credentials:'same-origin' });
       const j = await safeJson(res);
       if (!j || j.ok !== true) { alert((j && j.error) || 'Αποτυχία διαγραφής'); return; }
       await loadTeacherTopics();
       return;
     }
 
-    // Επεξεργασία
+    // Επεξεργασία τίτλου/σύνοψης
     if (e.target.classList.contains('editTopic')) {
-      const curTitle = art.querySelector('h4')?.textContent.trim() || '';
-      const curSummary = art.querySelector('p')?.textContent.trim() || '';
-      const newTitle = prompt('Νέος τίτλος:', curTitle);
+      const curTitle   = art.querySelector('h4')?.textContent.trim() || '';
+      const curSummary = art.querySelector('p')?.textContent.trim()  || '';
+      const newTitle   = prompt('Νέος τίτλος:', curTitle);
       if (newTitle === null) return;
       const newSummary = prompt('Νέα περιγραφή:', curSummary ?? '');
       if (newSummary === null) return;
@@ -339,7 +325,7 @@ document.addEventListener('DOMContentLoaded', () => {
       fd.append('id', id);
       fd.append('title', newTitle.trim());
       fd.append('summary', newSummary.trim());
-      const res = await fetch(`${API}/topics.php`, { method:'POST', body: fd, credentials: 'same-origin' });
+      const res = await fetch(`${API}/topics.php`, { method:'POST', body: fd, credentials:'same-origin' });
       const j = await safeJson(res);
       if (!j || j.ok !== true) { alert((j && j.error) || 'Αποτυχία ενημέρωσης'); return; }
       await loadTeacherTopics();
@@ -353,7 +339,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    // Cancel panel PDF
+    // Άκυρο panel PDF
     if (e.target.classList.contains('cancelPdf')) {
       const panel = art.querySelector('.pdfControls');
       if (panel) {
@@ -375,7 +361,7 @@ document.addEventListener('DOMContentLoaded', () => {
       fd.append('action', 'update');
       fd.append('id', id);
       fd.append('spec_pdf', f);
-      const res = await fetch(`${API}/topics.php`, { method:'POST', body: fd, credentials: 'same-origin' });
+      const res = await fetch(`${API}/topics.php`, { method:'POST', body: fd, credentials:'same-origin' });
       const j = await safeJson(res);
       if (!j || j.ok !== true) { alert((j && j.error) || 'Αποτυχία αποθήκευσης PDF'); return; }
       await loadTeacherTopics();
@@ -390,7 +376,7 @@ document.addEventListener('DOMContentLoaded', () => {
       fd.append('action', 'update');
       fd.append('id', id);
       fd.append('remove_pdf', '1');
-      const res = await fetch(`${API}/topics.php`, { method:'POST', body: fd, credentials: 'same-origin' });
+      const res = await fetch(`${API}/topics.php`, { method:'POST', body: fd, credentials:'same-origin' });
       const j = await safeJson(res);
       if (!j || j.ok !== true) { alert((j && j.error) || 'Αποτυχία διαγραφής PDF'); return; }
       await loadTeacherTopics();
@@ -398,25 +384,24 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    // Ανάθεση σε φοιτητή
+    // Προσωρινή ανάθεση (με αναζήτηση)
     if (e.target.classList.contains('assignStudent')) {
-      const am = prompt('Δώσε ΑΜ ή όνομα φοιτητή:');
-      if (!am) return;
+      const q = prompt('Δώσε ΑΜ ή όνομα φοιτητή:');
+      if (!q) return;
 
       const fd = new FormData();
       fd.append('action', 'assign_student');
       fd.append('id', id);
-      fd.append('student_query', am);
+      fd.append('student_query', q);
 
-      const res = await fetch(`${API}/topics.php`, { method:'POST', body: fd, credentials: 'same-origin' });
+      const res = await fetch(`${API}/topics.php`, { method:'POST', body: fd, credentials:'same-origin' });
       const j = await safeJson(res);
       if (!j || j.ok !== true) { alert((j && j.error) || 'Αποτυχία ανάθεσης'); return; }
-
       await loadTeacherTopics();
       return;
     }
 
-    // Αφαίρεση φοιτητή
+    // Αφαίρεση προσωρινής ανάθεσης
     if (e.target.classList.contains('unassignStudent')) {
       if (!confirm('Να αφαιρεθεί η προσωρινή ανάθεση;')) return;
 
@@ -424,16 +409,44 @@ document.addEventListener('DOMContentLoaded', () => {
       fd.append('action', 'unassign_student');
       fd.append('id', id);
 
-      const res = await fetch(`${API}/topics.php`, { method:'POST', body: fd, credentials: 'same-origin' });
+      const res = await fetch(`${API}/topics.php`, { method:'POST', body: fd, credentials:'same-origin' });
       const j = await safeJson(res);
       if (!j || j.ok !== true) { alert((j && j.error) || 'Αποτυχία αφαίρεσης'); return; }
-
       await loadTeacherTopics();
+      return;
+    }
+
+    // Οριστική ανάθεση (αν υπάρχει το κουμπί)
+    if (e.target.classList.contains('finalAssign')) {
+      const btn = e.target;
+      const topicId = btn.dataset.topicId || id;
+      const studentUserId = btn.dataset.studentUserId;
+      if (!studentUserId) { alert('Δεν βρέθηκε user_id φοιτητή για οριστική ανάθεση.'); return; }
+
+      if (!confirm('Να γίνει οριστική ανάθεση στον/στην φοιτητή/τρια;')) return;
+
+      btn.disabled = true;
+      try {
+        const fd = new FormData();
+        fd.append('topic_id', topicId);
+        fd.append('student_user_id', studentUserId);
+
+        const res = await fetch(API_THESES_ASSIGN, { method:'POST', body: fd, credentials:'same-origin' });
+        const j = await safeJson(res);
+        if (!j || j.ok !== true) { alert((j && j.error) || 'Αποτυχία οριστικής ανάθεσης'); }
+        else { alert('Η οριστική ανάθεση ολοκληρώθηκε.'); }
+        await loadTeacherTopics();
+      } catch (err) {
+        console.error(err);
+        alert('Σφάλμα δικτύου.');
+      } finally {
+        btn.disabled = false;
+      }
       return;
     }
   });
 
-  // Αλλαγή διαθέσιμου (toggle)
+  // Toggle διαθέσιμο
   box.addEventListener('change', async (e) => {
     if (!e.target.classList.contains('toggleAvail')) return;
     const art = e.target.closest('article[data-id]');
@@ -446,16 +459,18 @@ document.addEventListener('DOMContentLoaded', () => {
     fd.append('id', id);
     fd.append('is_available', checked);
 
-    const res = await fetch(`${API}/topics.php`, { method:'POST', body: fd, credentials: 'same-origin' });
+    const res = await fetch(`${API}/topics.php`, { method:'POST', body: fd, credentials:'same-origin' });
     const j = await safeJson(res);
     if (!j || j.ok !== true) {
       alert((j && j.error) || 'Αποτυχία ενημέρωσης');
-      e.target.checked = !e.target.checked; // rollback αν αποτύχει
+      e.target.checked = !e.target.checked; // rollback
     }
   });
 })();
 
-/* ========== ΛΕΠΤΟΜΕΡΕΙΕΣ διπλωματικής (σταθερός handler) ========== */
+/* =========================
+   ΛΕΠΤΟΜΕΡΕΙΕΣ διπλωματικής
+   ========================= */
 (function bindThesisDetails(){
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', bindThesisDetails);
@@ -475,7 +490,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!det) return;
 
     if (det.style.display === 'block') { det.style.display = 'none'; return; }
-
     det.style.display = 'block';
     det.textContent = 'Φόρτωση…';
 
@@ -492,7 +506,6 @@ document.addEventListener('DOMContentLoaded', () => {
         headers: { 'Accept': 'application/json' },
         credentials: 'same-origin'
       });
-
       const j = await safeJson(res);
       if (!j || j.ok !== true) {
         det.innerHTML = `<span style="color:#ef4444">${esc((j && j.error) || 'Σφάλμα')}</span>`;
@@ -515,7 +528,7 @@ document.addEventListener('DOMContentLoaded', () => {
               }
             </ul>
           </div>
-          <div style="opacity:.8">Κατάσταση: ${esc(thesis.status || '—')}</div>
+          <div class="muted">Κατάσταση: ${esc(thesis.status || '—')}</div>
         </div>
       `;
     } catch (err) {
@@ -525,7 +538,9 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 })();
 
-/* ======= Handlers για αποδοχή/απόρριψη προσκλήσεων ======= */
+/* =========================
+   Αποδοχή / Απόρριψη Προσκλήσεων
+   ========================= */
 (function bindInvitationActions(){
   if (window.__invActionsBound) return;
   window.__invActionsBound = true;
@@ -553,11 +568,9 @@ document.addEventListener('DOMContentLoaded', () => {
         credentials: 'same-origin'
       });
 
-      const txt = await res.text();
-      let j = null; try { j = txt ? JSON.parse(txt) : null; } catch {}
+      const j = await safeJson(res);
       if (!res.ok || !j || j.ok !== true) {
-        const msg = (j && j.error) || `HTTP ${res.status}`;
-        alert(msg);
+        alert((j && j.error) || `HTTP ${res.status}`);
         return;
       }
 
@@ -576,8 +589,9 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 })();
 
-
-/* ========== Exports χωρίς να αλλάξουμε τη λογική τους ========== */
+/* =========================
+   Εξαγωγές (CSV / JSON) της λίστας διπλωματικών
+   ========================= */
 (function bindThesesExports(){
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', bindThesesExports);
@@ -609,20 +623,17 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 })();
 
-/* =========================
-   Βοηθητικά για export
-   ========================= */
 async function currentThesesData(){
   const roleSel   = document.getElementById('thesisRole');
   const statusSel = document.getElementById('thesisStatus');
-  const role = roleSel?.value || '';
+  const role   = roleSel?.value || '';
   const status = statusSel?.value || '';
   const url = new URL(`${API}/theses.php`, window.location.origin);
   url.searchParams.set('action', 'list');
   if (role)   url.searchParams.set('role', role);
   if (status) url.searchParams.set('status', status);
   try {
-    const res = await fetch(url, { credentials: 'same-origin', headers: { 'Accept':'application/json' } });
+    const res = await fetch(url, { credentials:'same-origin', headers:{ 'Accept':'application/json' } });
     const j = await safeJson(res);
     return (j && j.ok) ? (j.data || []) : [];
   } catch {
@@ -637,7 +648,7 @@ function downloadCSV(rows, filename) {
     cols.join(','),
     ...rows.map(r => cols.map(k => `"${String(r[k] ?? '').replace(/"/g,'""')}"`).join(',')),
   ];
-  const blob = new Blob([lines.join('\n')], {type:'text/csv;charset=utf-8;'});
+  const blob = new Blob([lines.join('\n')], { type:'text/csv;charset=utf-8;' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = filename;
@@ -646,14 +657,14 @@ function downloadCSV(rows, filename) {
 }
 
 /* =========================
-   Αρχικό load
+   Αρχικό Load + Φίλτρα/Ανανέωση
    ========================= */
 document.addEventListener('DOMContentLoaded', () => {
+  loadTeacherTopics();     // αν έχεις card "Τα θέματα μου"
   loadThesesList();
   loadInvitations();
 });
 
-/* ========== Re-bind φίλτρα & κουμπί Ανανέωσης ========== */
 (function bindThesesFiltersReload(){
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', bindThesesFiltersReload);
