@@ -1,100 +1,78 @@
 <?php
-// api/theses/set_nimeritis.php
 declare(strict_types=1);
+
+require_once __DIR__ . '/../bootstrap.php'; // session, db(), ok(), bad(), require_role()
 header('Content-Type: application/json; charset=utf-8');
 
-session_start();
-
-// === 1) Auth / Guard ===
-// Προσαρμόσέ το στο δικό σου auth (π.χ. $_SESSION['user'])
-if (empty($_SESSION['user']) || ($_SESSION['user']['role'] ?? '') !== 'student') {
-  http_response_code(401);
-  echo json_encode(['ok' => false, 'error' => 'Unauthorized']);
-  exit;
+$user = require_role('student'); // μόνο φοιτητής/τρια
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+  bad('Method not allowed', 405);
 }
-
-$studentUserId = (int) $_SESSION['user']['id'];
-
-// === 2) Input ===
-// Δέξου JSON ή form-data για ευελιξία
-$raw = file_get_contents('php://input');
-$in  = json_decode($raw ?: '[]', true);
-if (!is_array($in) || empty($in)) {
-  $in = $_POST; // fallback αν ήρθε multipart/form-data
-}
-
-$thesis_id = isset($in['thesis_id']) ? trim((string)$in['thesis_id']) : '';
-$nimeritis_url = isset($in['nimeritis_url']) ? trim((string)$in['nimeritis_url']) : '';
-$nimeritis_deposit_date = isset($in['nimeritis_deposit_date']) ? trim((string)$in['nimeritis_deposit_date']) : '';
-
-if ($thesis_id === '' || $nimeritis_url === '' || $nimeritis_deposit_date === '') {
-  http_response_code(400);
-  echo json_encode(['ok' => false, 'error' => 'Missing fields']);
-  exit;
-}
-
-// Βασικός έλεγχος URL
-if (!filter_var($nimeritis_url, FILTER_VALIDATE_URL)) {
-  http_response_code(422);
-  echo json_encode(['ok' => false, 'error' => 'Invalid URL']);
-  exit;
-}
-
-// Βασικός έλεγχος ημερομηνίας (YYYY-MM-DD)
-if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $nimeritis_deposit_date)) {
-  http_response_code(422);
-  echo json_encode(['ok' => false, 'error' => 'Invalid date']);
-  exit;
-}
-
-// === 3) DB ===
-require_once __DIR__ . '/../_db.php'; // προσαρμογή στο include σου
-// _db.php πρέπει να φτιάχνει $pdo (PDO) σε UTF8 & exceptions
 
 try {
-  // (α) Βεβαιώσου ότι η διπλωματική ανήκει στον φοιτητή (ή είναι assigned σε αυτόν)
-  $sql = "SELECT t.id
-          FROM theses t
-          WHERE t.id = :id
-            AND t.student_user_id = :uid
-          LIMIT 1";
-  $stmt = $pdo->prepare($sql);
-  $stmt->execute([':id' => $thesis_id, ':uid' => $studentUserId]);
-  $row = $stmt->fetch(PDO::FETCH_ASSOC);
-  if (!$row) {
-    http_response_code(403);
-    echo json_encode(['ok' => false, 'error' => 'Forbidden']);
-    exit;
+  // Διάβασε σώμα: υποστήριξη JSON *και* POST form-data
+  $raw = file_get_contents('php://input');
+  $in  = [];
+  if (!empty($raw) && strpos($_SERVER['CONTENT_TYPE'] ?? '', 'application/json') !== false) {
+    $in = json_decode($raw, true) ?: [];
+  } else {
+    $in = $_POST;
   }
 
-  // (β) Ενημέρωσε πεδία Νημερτή
-  $upd = $pdo->prepare(
-    "UPDATE theses
-     SET nimeritis_url = :url,
-         nimeritis_deposit_date = :dd,
-         updated_at = NOW()
-     WHERE id = :id"
-  );
-  $upd->execute([
-    ':url' => $nimeritis_url,
-    ':dd'  => $nimeritis_deposit_date,
-    ':id'  => $thesis_id
+  $thesisId   = trim((string)($in['thesis_id'] ?? ''));
+  $url        = trim((string)($in['nimeritis_url'] ?? $in['url'] ?? ''));
+  // δεχόμαστε και τα δύο ονόματα:
+  $depositRaw = trim((string)($in['nimeritis_deposit_date'] ?? $in['deposit_date'] ?? ''));
+
+  if ($thesisId === '' || $url === '' || $depositRaw === '') {
+    bad('Bad request: thesis_id, nimeritis_url και deposit_date είναι υποχρεωτικά.', 400);
+  }
+
+  // Βασική επικύρωση URL
+  if (!filter_var($url, FILTER_VALIDATE_URL) || !preg_match('~^https?://~i', $url)) {
+    bad('Μη έγκυρος σύνδεσμος Νημερτής.', 400);
+  }
+
+  // Επικύρωση ημερομηνίας (Y-m-d)
+  $d = DateTime::createFromFormat('Y-m-d', $depositRaw);
+  $dateOk = $d && $d->format('Y-m-d') === $depositRaw;
+  if (!$dateOk) {
+    bad('Μη έγκυρη ημερομηνία κατάθεσης (μορφή YYYY-MM-DD).', 400);
+  }
+  $depositDate = $d->format('Y-m-d');
+
+  $pdo = db();
+
+  // Έλεγχος ότι η ΔΕ ανήκει στον συγκεκριμένο φοιτητή
+  $st = $pdo->prepare("SELECT id FROM theses WHERE id = ? AND student_id = ? LIMIT 1");
+  $st->execute([$thesisId, $user['id']]);
+  if (!$st->fetchColumn()) {
+    bad('Forbidden', 403);
+  }
+
+  // (προαιρετικό) μπορείς να επιβάλεις ότι πρέπει να υπάρχουν βαθμοί:
+  // $hasGrades = (bool)db()->query("SELECT EXISTS(SELECT 1 FROM grades WHERE thesis_id = ".$pdo->quote($thesisId).")")->fetchColumn();
+  // if (!$hasGrades) bad('Δεν έχουν καταχωρηθεί ακόμα βαθμοί.', 400);
+
+  // Αποθήκευση
+  $st = $pdo->prepare("
+    UPDATE theses
+       SET nimeritis_url          = :url,
+           nimeritis_deposit_date = :dd
+     WHERE id = :id
+  ");
+  $st->execute([
+    ':url' => $url,
+    ':dd'  => $depositDate,
+    ':id'  => $thesisId,
   ]);
 
-  // (γ) Προαιρετικά: γράψε event στο timeline
-  // Αν έχεις πίνακα thesis_timeline(event_type, thesis_id, created_at, meta_json)
-  // ξεσχολίασε:
-  /*
-  $meta = json_encode(['nimeritis_url' => $nimeritis_url, 'date' => $nimeritis_deposit_date], JSON_UNESCAPED_UNICODE);
-  $ins = $pdo->prepare(
-    "INSERT INTO thesis_timeline (thesis_id, event_type, created_at, meta_json)
-     VALUES (:id, 'nimeritis_set', NOW(), :meta)"
-  );
-  $ins->execute([':id' => $thesis_id, ':meta' => $meta]);
-  */
+  // (προαιρετικά) γράψε και timeline event
+  // $tl = $pdo->prepare("INSERT INTO thesis_timeline(id, thesis_id, event_type, created_at) VALUES (UUID(), ?, 'nimeritis_set', NOW())");
+  // $tl->execute([$thesisId]);
 
-  echo json_encode(['ok' => true]);
+  ok(['saved' => true]);
+
 } catch (Throwable $e) {
-  http_response_code(500);
-  echo json_encode(['ok' => false, 'error' => 'Server error']);
+  bad('SQL error: '.$e->getMessage(), 500);
 }

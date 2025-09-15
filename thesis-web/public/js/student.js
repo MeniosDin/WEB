@@ -6,32 +6,52 @@ const fmt = (d) => (d ? new Date(d).toLocaleString() : '—');
 const esc = (s = '') =>
   String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
+/* ---------------- State ---------------- */
 let CURRENT_THESIS = null;
 
-/* ---------------- Utils ---------------- */
+/* ---------------- Helpers for flexible API payloads ---------------- */
+const getItems   = (r) => (r?.data?.items   ?? r?.items   ?? []);
+const getItem    = (r) => (r?.data?.item    ?? r?.item    ?? null);
+const getSummary = (r) => (r?.data?.summary ?? r?.summary ?? {});
+const getUser    = (r) => (r?.data?.user    ?? r?.user    ?? {});
+const getThesis  = (r) => (r?.data?.thesis  ?? r?.thesis  ?? null);
+
 function timeAgo(dateStr) {
   if (!dateStr) return '—';
   const now = new Date();
   const d = new Date(dateStr);
   const ms = Math.max(0, now - d);
-  const m = Math.floor(ms / 60000);
-  const h = Math.floor(m / 60);
+  const m  = Math.floor(ms / 60000);
+  const h  = Math.floor(m / 60);
   const dd = Math.floor(h / 24);
   if (dd >= 1) return `πριν ${dd} ${dd === 1 ? 'ημέρα' : 'ημέρες'}`;
-  if (h >= 1) return `πριν ${h} ${h === 1 ? 'ώρα' : 'ώρες'}`;
+  if (h  >= 1) return `πριν ${h}  ${h  === 1 ? 'ώρα'  : 'ώρες'}`;
   return `πριν ${m} ${m === 1 ? 'λεπτό' : 'λεπτά'}`;
 }
 
+/* Badge για ΚΑΤΑΣΤΑΣΗ ΔΙΠΛΩΜΑΤΙΚΗΣ */
 function statusBadge(s) {
   const map = {
     under_assignment: 'Υπό ανάθεση',
-    active: 'Ενεργή',
-    under_review: 'Υπό εξέταση',
-    completed: 'Περατωμένη',
-    canceled: 'Ακυρωμένη',
+    active:           'Ενεργή',
+    under_review:     'Υπό εξέταση',
+    completed:        'Περατωμένη',
+    canceled:         'Ακυρωμένη',
   };
   const label = map[s] || s || '—';
   return `<span style="display:inline-block;background:#1f2937;color:#e5e7eb;border-radius:.4rem;padding:.15rem .5rem;font-size:.85em">${label}</span>`;
+}
+
+/* Badge για ΚΑΤΑΣΤΑΣΗ ΠΡΟΣΚΛΗΣΗΣ */
+function inviteStatusBadge(s) {
+  const map = {
+    pending:  'Σε αναμονή',
+    accepted: 'Αποδεκτή',
+    declined: 'Απορρίφθηκε',
+    canceled: 'Ακυρώθηκε',
+  };
+  const label = map[s] || s || '—';
+  return `<span style="display:inline-block;background:#111827;color:#e5e7eb;border-radius:.4rem;padding:.15rem .5rem;font-size:.85em">${label}</span>`;
 }
 
 function ensureBox(sel, title) {
@@ -87,14 +107,10 @@ async function loadMyThesis() {
   const out = $('#thesis');
   out.innerHTML = 'Φόρτωση...';
 
-  // αναμένουμε: id, topic_id, status, created_at, assigned_at
   const res = await apiGet('/theses/list.php');
-  if (!res.ok) {
-    out.textContent = res.error || 'Σφάλμα φόρτωσης';
-    return null;
-  }
+  if (!res?.ok) { out.textContent = res?.error || 'Σφάλμα φόρτωσης'; return null; }
 
-  const items = res.items || [];
+  const items = getItems(res);
   if (!items.length) {
     out.innerHTML = `<div class="card" style="padding:1rem">Δεν έχεις διπλωματική ακόμη.</div>`;
     return null;
@@ -108,7 +124,8 @@ async function loadMyThesis() {
   let topic = { title: '—', summary: '', pdf_path: '' };
   try {
     const r = await apiGet(`/topics/get.php?id=${encodeURIComponent(t.topic_id)}`);
-    if (r?.item) topic = r.item;
+    const item = getItem(r);
+    if (item) topic = item;
   } catch (_) {}
 
   out.innerHTML = renderThesis(t, topic);
@@ -118,90 +135,79 @@ async function loadMyThesis() {
 async function loadInvitations(thesis_id) {
   const box = ensureBox('#invitesBox', 'Προσκλήσεις');
   box.innerHTML = 'Φόρτωση...';
+
   const res = await apiGet(`/committee/invitations_list.php?thesis_id=${encodeURIComponent(thesis_id)}`);
-  if (!res.ok) {
-    box.textContent = res.error || 'Σφάλμα';
-    return;
-  }
-  const rows = res.items || [];
-  if (!rows.length) {
-    box.innerHTML = '<em>Δεν υπάρχουν προσκλήσεις ακόμη.</em>';
-    return;
-  }
-  box.innerHTML = rows
-    .map(
-      (r) => `
-    <div class="card" style="padding:.6rem;margin:.3rem 0">
-      <div><strong>Invitation:</strong> ${r.id}</div>
-      <div><strong>Status:</strong> ${statusBadge(r.status)}</div>
-      <div><small>Invited: ${fmt(r.invited_at)} ${r.responded_at ? '· Responded: ' + fmt(r.responded_at) : ''}</small></div>
-    </div>`
-    )
-    .join('');
+  if (!res?.ok) { box.textContent = res?.error || 'Σφάλμα'; return; }
+
+  // Προαιρετικό header
+  const th = getThesis(res);
+  const header = th
+    ? `<div style="margin-bottom:.35rem;opacity:.85"><small><b>Επιβλέπων:</b> ${esc(th.supervisor_name || '—')}</small></div>`
+    : '';
+
+  const rows = getItems(res);
+  if (!rows.length) { box.innerHTML = header + '<em>Δεν υπάρχουν προσκλήσεις ακόμη.</em>'; return; }
+
+  box.innerHTML = header + rows.map(r => {
+    const st = r.inv_status ?? r.status ?? null; // <- ΔΙΑΒΑΖΕΙ ΤΟ inv_status
+    const who = r.member_name || r.person_name || `${esc(r.first_name || '')} ${esc(r.last_name || '')}`.trim() || '—';
+    return `
+      <div class="card" style="padding:.6rem;margin:.3rem 0">
+        <div><strong>Μέλος:</strong> ${esc(who)}</div>
+        <div><strong>Κατάσταση:</strong> ${inviteStatusBadge(st)}</div>
+        <div><small>Πρόσκληση: ${fmt(r.invited_at)}${r.responded_at ? ' · Απάντηση: ' + fmt(r.responded_at) : ''}</small></div>
+      </div>
+    `;
+  }).join('');
 }
 
 async function loadMembers(thesis_id) {
   const box = ensureBox('#membersBox', 'Μέλη Τριμελούς');
   box.innerHTML = 'Φόρτωση...';
+
   const res = await apiGet(`/committee/members.php?thesis_id=${encodeURIComponent(thesis_id)}`);
-  if (!res.ok) {
-    box.textContent = res.error || 'Σφάλμα';
-    return;
-  }
-  const rows = res.items || [];
-  if (!rows.length) {
-    box.innerHTML = '<em>Δεν έχουν οριστεί ακόμη μέλη.</em>';
-    return;
-  }
-  box.innerHTML = rows
-    .map(
-      (m) => `
+  if (!res?.ok) { box.textContent = res?.error || 'Σφάλμα'; return; }
+
+  const rows = getItems(res);
+  if (!rows.length) { box.innerHTML = '<em>Δεν έχουν οριστεί ακόμη μέλη.</em>'; return; }
+
+  box.innerHTML = rows.map(m => `
     <div class="card" style="padding:.6rem;margin:.3rem 0">
-      <div><strong>${esc((m.first_name || '') + ' ' + (m.last_name || ''))}</strong> — ${esc(m.email || '—')}</div>
+      <div><strong>${esc((m.first_name||'')+' '+(m.last_name||''))}</strong> — ${esc(m.email||'—')}</div>
       <small>Ρόλος: ${esc(m.role_in_committee || '—')}</small>
-    </div>`
-    )
-    .join('');
+    </div>
+  `).join('');
 }
 
 async function loadTimeline(thesis_id) {
   const box = ensureBox('#timelineBox', 'Χρονολόγιο');
   box.innerHTML = 'Φόρτωση...';
+
   const res = await apiGet(`/theses/timeline.php?thesis_id=${encodeURIComponent(thesis_id)}`);
-  if (!res.ok) {
-    box.textContent = res.error || 'Σφάλμα';
-    return;
-  }
-  const rows = res.items || [];
-  if (!rows.length) {
-    box.innerHTML = '<em>Ακόμη δεν υπάρχουν γεγονότα.</em>';
-    return;
-  }
-  box.innerHTML = rows
-    .map(
-      (e) => `
+  if (!res?.ok) { box.textContent = res?.error || 'Σφάλμα'; return; }
+
+  const rows = getItems(res);
+  if (!rows.length) { box.innerHTML = '<em>Ακόμη δεν υπάρχουν γεγονότα.</em>'; return; }
+
+  box.innerHTML = rows.map(e => `
     <div class="card" style="padding:.6rem;margin:.3rem 0">
       <div><strong>${esc(e.event_type || 'event')}</strong></div>
       <div>${esc(e.from_status || '—')} → ${esc(e.to_status || '—')}</div>
       <small>${fmt(e.created_at)}</small>
-    </div>`
-    )
-    .join('');
+    </div>
+  `).join('');
 }
 
 async function loadGrades(thesis_id) {
   const box = ensureBox('#gradesBox', 'Βαθμολογία (Σύνοψη)');
   box.innerHTML = 'Φόρτωση...';
+
   const res = await apiGet(`/grades/summary.php?thesis_id=${encodeURIComponent(thesis_id)}`);
-  if (!res.ok) {
-    box.textContent = res.error || 'Σφάλμα';
-    return;
-  }
-  const s = res.summary || {};
-  if (!s.cnt) {
-    box.innerHTML = '<em>Δεν έχουν καταχωρηθεί βαθμοί ακόμη.</em>';
-    return;
-  }
+  if (!res?.ok) { box.textContent = res?.error || 'Σφάλμα'; return; }
+
+  const s = getSummary(res);
+  if (!s.cnt) { box.innerHTML = '<em>Δεν έχουν καταχωρηθεί βαθμοί ακόμη.</em>'; return; }
+
   box.innerHTML = `
     <div class="card" style="padding:.6rem">
       <div><strong>Μέσος όρος:</strong> ${Number(s.avg_total || 0).toFixed(2)}</div>
@@ -213,16 +219,13 @@ async function loadGrades(thesis_id) {
 async function loadPresentation(thesis_id) {
   const box = ensureBox('#presentationBox', 'Παρουσίαση');
   box.innerHTML = 'Φόρτωση...';
+
   const res = await apiGet(`/presentation/get.php?thesis_id=${encodeURIComponent(thesis_id)}`);
-  if (!res.ok) {
-    box.textContent = res.error || 'Σφάλμα';
-    return;
-  }
-  const p = res.item;
-  if (!p) {
-    box.innerHTML = '<em>Δεν έχει προγραμματιστεί ακόμη παρουσίαση.</em>';
-    return;
-  }
+  if (!res?.ok) { box.textContent = res?.error || 'Σφάλμα'; return; }
+
+  const p = getItem(res);
+  if (!p) { box.innerHTML = '<em>Δεν έχει προγραμματιστεί ακόμη παρουσίαση.</em>'; return; }
+
   box.innerHTML = `
     <div class="card" style="padding:.6rem">
       <div><strong>Ημ/νία:</strong> ${fmt(p.when_dt)}</div>
@@ -246,28 +249,23 @@ async function refreshThesisExtras() {
 
 /* ---------------- 2) Επεξεργασία Προφίλ ---------------- */
 async function loadProfile() {
-  const f = $('#profileForm');
-  if (!f) return;
+  const f = $('#profileForm'); if (!f) return;
   const msg = $('#profileMsg');
   msg.textContent = 'Φόρτωση...';
 
   const res = await apiGet('/users/get_profile.php');
-  if (!res.ok) {
-    msg.textContent = res.error || 'Σφάλμα φόρτωσης';
-    return;
-  }
+  if (!res?.ok) { msg.textContent = res?.error || 'Σφάλμα φόρτωσης'; return; }
 
-  const u = res.user || {};
-  f.email.value = u.email || '';
-  f.phone_mobile.value = u.phone_mobile || '';
+  const u = getUser(res);
+  f.email.value          = u.email || '';
+  f.phone_mobile.value   = u.phone_mobile || '';
   f.phone_landline.value = u.phone_landline || '';
-  f.address.value = u.address || '';
+  f.address.value        = u.address || '';
   msg.textContent = '';
 }
 
 function wireProfileForm() {
-  const f = $('#profileForm');
-  if (!f) return;
+  const f = $('#profileForm'); if (!f) return;
   const msg = $('#profileMsg');
 
   f.addEventListener('submit', async (e) => {
@@ -277,8 +275,8 @@ function wireProfileForm() {
     const data = Object.fromEntries(new FormData(f).entries());
     const res = await apiPost('/users/update_profile.php', data);
 
-    if (!res.ok) {
-      msg.textContent = res.error || 'Σφάλμα';
+    if (!res?.ok) {
+      msg.textContent = res?.error || 'Σφάλμα';
       msg.style.color = '#b91c1c';
     } else {
       msg.textContent = 'Αποθηκεύτηκε ✔';
@@ -292,23 +290,23 @@ function wireProfileForm() {
 async function getThesisId() {
   if (CURRENT_THESIS?.id) return CURRENT_THESIS.id;
   const r = await apiGet('/theses/list.php');
-  if (r?.ok && Array.isArray(r.items) && r.items.length) {
-    r.items.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-    CURRENT_THESIS = r.items[0];
+  const items = (r?.ok ? getItems(r) : []);
+  if (items.length) {
+    items.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    CURRENT_THESIS = items[0];
     return CURRENT_THESIS.id;
   }
   return null;
 }
 
-// Πρόσκληση μέλους (person_id ή user_id)
+// Γρήγορη πρόσκληση (person_id ή user_id)
 function wireInviteForm() {
-  const form = $('#inviteF');
-  if (!form) return;
+  const form = $('#inviteF'); if (!form) return;
 
   if (!form.querySelector('[name="thesis_id"]') && CURRENT_THESIS) {
     const hidden = document.createElement('input');
-    hidden.type = 'hidden';
-    hidden.name = 'thesis_id';
+    hidden.type  = 'hidden';
+    hidden.name  = 'thesis_id';
     hidden.value = CURRENT_THESIS.id;
     form.appendChild(hidden);
   }
@@ -318,76 +316,86 @@ function wireInviteForm() {
     const data = Object.fromEntries(new FormData(form).entries());
     if (!data.thesis_id) data.thesis_id = await getThesisId();
     const res = await apiPost('/committee/invite.php', data);
-    $('#inviteMsg').textContent = res.ok ? 'Η πρόσκληση στάλθηκε.' : res.error || 'Σφάλμα';
+    $('#inviteMsg').textContent =
+      res?.ok ? (res.already ? 'Ήδη υπάρχει πρόσκληση ✔' : 'Η πρόσκληση στάλθηκε.') : (res?.error || 'Σφάλμα');
     refreshThesisExtras();
   });
 }
 
-// Αναζήτηση διδασκόντων & άμεση πρόσκληση
+// Αναζήτηση διδασκόντων & άμεση πρόσκληση (user_id)
 function wireTeacherSearch() {
   const searchF = $('#teacherSearchF');
   const results = $('#teacherResults');
-  const msg = $('#teacherSearchMsg');
+  const msg     = $('#teacherSearchMsg');
   if (!searchF || !results) return;
 
   searchF.addEventListener('submit', async (e) => {
     e.preventDefault();
     msg.textContent = 'Αναζήτηση...';
     results.innerHTML = '';
+
     const q = new FormData(searchF).get('q') || '';
     const res = await apiGet(`/users/list.php?role=teacher&q=${encodeURIComponent(q)}`);
-    msg.textContent = res.ok ? '' : res.error || 'Σφάλμα';
-    const items = res.items || [];
+
+    msg.textContent = res?.ok ? '' : (res?.error || 'Σφάλμα');
+    const items = getItems(res);
     if (!items.length) {
       results.innerHTML = '<em>Δεν βρέθηκαν διδάσκοντες.</em>';
       return;
     }
-    results.innerHTML = items
-      .map(
-        (u) => `
+
+    results.innerHTML = items.map(u => `
       <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px dashed #e5e7eb;padding:.35rem 0">
         <div>
           <strong>${esc(u.name || '—')}</strong>
           <div class="muted"><small>${esc(u.email || '—')}</small></div>
         </div>
-        <button class="btn" data-invite-user="${u.id}">Πρόσκληση</button>
-      </div>`
-      )
-      .join('');
+        <button class="btn" data-invite-user="${esc(u.id)}">Πρόσκληση</button>
+      </div>
+    `).join('');
   });
 
   results.addEventListener('click', async (e) => {
-    const btn = e.target.closest('[data-invite-user]');
-    if (!btn) return;
+    const btn = e.target.closest('[data-invite-user]'); if (!btn) return;
     btn.disabled = true;
+
     const thesis_id = await getThesisId();
+    if (!thesis_id) {
+      btn.textContent = 'Σφάλμα: thesis';
+      setTimeout(() => { btn.disabled = false; btn.textContent = 'Πρόσκληση'; }, 1500);
+      return;
+    }
+
     const user_id = btn.getAttribute('data-invite-user');
     const res = await apiPost('/committee/invite.php', { thesis_id, user_id });
-    btn.textContent = res.ok ? 'Στάλθηκε ✔' : res.error || 'Σφάλμα';
+
+    if (res?.ok && res.already)      btn.textContent = 'Ήδη υπάρχει ✔';
+    else if (res?.ok)                btn.textContent = 'Στάλθηκε ✔';
+    else                             btn.textContent = res?.error || 'Σφάλμα';
+
     refreshThesisExtras();
-    setTimeout(() => ((btn.disabled = false), (btn.textContent = 'Πρόσκληση')), 1200);
+    setTimeout(() => { btn.disabled = false; btn.textContent = 'Πρόσκληση'; }, 1200);
   });
 }
 
-// Upload draft (multipart) & δήλωση πόρων ως link
+// Upload draft & πόροι
 function wireDraftAndResources() {
-  const draftF = $('#draftUploadF');
+  const draftF  = $('#draftUploadF');
   const draftMsg = $('#draftUploadMsg');
   if (draftF) {
     draftF.addEventListener('submit', async (e) => {
       e.preventDefault();
       if (draftMsg) draftMsg.textContent = 'Μεταφόρτωση...';
       const thesis_id = await getThesisId();
-      const fd = new FormData(draftF); // περιέχει name="file"
+      const fd = new FormData(draftF); // name="file"
       fd.append('thesis_id', thesis_id);
       fd.append('kind', 'draft');
-      const r = await fetch('./api/resources/create.php', { method: 'POST', body: fd, credentials: 'include' });
-      const res = await r.json().catch(() => ({ ok: false, error: 'Σφάλμα' }));
-      if (draftMsg) draftMsg.textContent = res.ok ? 'Καταχωρήθηκε ✔' : res.error || 'Σφάλμα';
+      const res = await apiPost('/resources/create.php', fd);
+      if (draftMsg) draftMsg.textContent = res?.ok ? 'Καταχωρήθηκε ✔' : (res?.error || 'Σφάλμα');
     });
   }
 
-  const resF = $('#resourceF');
+  const resF  = $('#resourceF');
   const resMsg = $('#resourceMsg');
   if (resF) {
     resF.addEventListener('submit', async (e) => {
@@ -397,7 +405,7 @@ function wireDraftAndResources() {
       const data = Object.fromEntries(new FormData(resF).entries()); // kind, url_or_path
       data.thesis_id = thesis_id;
       const res = await apiPost('/resources/create.php', data);
-      if (resMsg) resMsg.textContent = res.ok ? 'Καταχωρήθηκε ✔' : res.error || 'Σφάλμα';
+      if (resMsg) resMsg.textContent = res?.ok ? 'Καταχωρήθηκε ✔' : (res?.error || 'Σφάλμα');
     });
   }
 }
@@ -414,7 +422,7 @@ function wireSchedule() {
     const data = Object.fromEntries(new FormData(f).entries()); // when_dt, mode, room_or_link
     data.thesis_id = thesis_id;
     const res = await apiPost('/presentation/schedule.php', data);
-    if (msg) msg.textContent = res.ok ? 'Καταχωρήθηκε ✔' : res.error || 'Σφάλμα';
+    if (msg) msg.textContent = res?.ok ? 'Καταχωρήθηκε ✔' : (res?.error || 'Σφάλμα');
     refreshThesisExtras();
   });
 }
@@ -431,7 +439,7 @@ function wireNimeritis() {
     const data = Object.fromEntries(new FormData(f).entries()); // nimeritis_url, nimeritis_deposit_date
     data.thesis_id = thesis_id;
     const res = await apiPost('/theses/set_nimeritis.php', data);
-    if (msg) msg.textContent = res.ok ? 'Αποθηκεύτηκε ✔' : res.error || 'Σφάλμα';
+    if (msg) msg.textContent = res?.ok ? 'Αποθηκεύτηκε ✔' : (res?.error || 'Σφάλμα');
     refreshThesisExtras();
   });
 }

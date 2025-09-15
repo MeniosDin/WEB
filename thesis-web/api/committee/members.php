@@ -1,30 +1,94 @@
 <?php
-header('Content-Type: application/json; charset=UTF-8');
+// api/committee/members.php
+declare(strict_types=1);
+
+require_once __DIR__ . '/../bootstrap.php'; // session, db(), ok(), bad(), require_login()
+header('Content-Type: application/json; charset=utf-8');
 
 try {
-  define('MOCK_MODE', true);
+  $pdo = db();
+  $me  = require_login();
 
-  $thesis_id = $_GET['thesis_id'] ?? null;
-  if (!$thesis_id) { echo json_encode(['ok'=>false,'error'=>'thesis_id required']); exit; }
+  $thesisId = trim((string)($_GET['thesis_id'] ?? ''));
+  if ($thesisId === '') bad('Bad request', 400);
 
-  if (MOCK_MODE) {
-    echo json_encode(['ok'=>true,'items'=>[]], JSON_UNESCAPED_UNICODE); exit;
+  // ---- Access check (student owns thesis, or teacher is supervisor / in committee, or secretariat)
+  $can = false;
+
+  if ($me['role'] === 'student') {
+    $st = $pdo->prepare('SELECT 1 FROM theses WHERE id = ? AND student_id = ? LIMIT 1');
+    $st->execute([$thesisId, $me['id']]);
+    $can = (bool)$st->fetchColumn();
+  } elseif ($me['role'] === 'teacher' || $me['role'] === 'secretariat') {
+    // supervisor?
+    $st = $pdo->prepare('SELECT 1 FROM theses WHERE id = ? AND supervisor_id = ? LIMIT 1');
+    $st->execute([$thesisId, $me['id']]);
+    $can = (bool)$st->fetchColumn();
+
+    // committee member by persons.user_id?
+    if (!$can) {
+      $st = $pdo->prepare('
+        SELECT 1
+          FROM committee_members cm
+          JOIN persons p ON p.id = cm.person_id
+         WHERE cm.thesis_id = ? AND p.user_id = ?
+         LIMIT 1
+      ');
+      $st->execute([$thesisId, $me['id']]);
+      $can = (bool)$st->fetchColumn();
+    }
   }
 
-  @require_once __DIR__ . '/../utils/bootstrap.php';
-  @require_once __DIR__ . '/../utils/auth_guard.php';
-  if (!function_exists('ensure_logged_in')) { function ensure_logged_in(){} }
-  if (!function_exists('assert_student_owns_thesis')) { function assert_student_owns_thesis($x){return true;} }
+  if (!$can) bad('Forbidden', 403);
 
-  ensure_logged_in(); assert_student_owns_thesis($thesis_id);
+  // ---- Supervisor (from theses.supervisor_id)
+  $qSup = $pdo->prepare('
+    SELECT
+      "supervisor" AS role_in_committee,
+      u.id  AS user_id,
+      u.email,
+      p.id  AS person_id,
+      p.first_name,
+      p.last_name
+    FROM theses t
+    LEFT JOIN users   u ON u.id = t.supervisor_id
+    LEFT JOIN persons p ON p.user_id = u.id
+    WHERE t.id = ?
+    LIMIT 1
+  ');
+  $qSup->execute([$thesisId]);
+  $super = $qSup->fetch(PDO::FETCH_ASSOC);
 
-  $sql = "SELECT u.first_name, u.last_name, u.email, cm.role_in_committee
-          FROM committee_members cm JOIN users u ON u.id = cm.user_id
-          WHERE cm.thesis_id = ? ORDER BY (cm.role_in_committee='supervisor') DESC, u.last_name ASC";
-  $st = $pdo->prepare($sql); $st->execute([$thesis_id]);
-  $items = $st->fetchAll(PDO::FETCH_ASSOC) ?: [];
-  echo json_encode(['ok'=>true,'items'=>$items], JSON_UNESCAPED_UNICODE);
-} catch(Throwable $e){
-  http_response_code(500);
-  echo json_encode(['ok'=>false,'error'=>'server error']);
+  // ---- Members (exclude any rows marked as supervisor to avoid duplicates)
+  $qMem = $pdo->prepare('
+    SELECT
+      cm.role_in_committee,
+      cm.added_at,
+      u.id  AS user_id,
+      u.email,
+      p.id  AS person_id,
+      p.first_name,
+      p.last_name
+    FROM committee_members cm
+    JOIN persons p ON p.id = cm.person_id
+    LEFT JOIN users   u ON u.id = p.user_id
+    WHERE cm.thesis_id = ?
+      AND cm.role_in_committee <> "supervisor"
+    ORDER BY
+      FIELD(cm.role_in_committee, "supervisor","member","external","examiner","other"),
+      p.last_name, p.first_name
+  ');
+  $qMem->execute([$thesisId]);
+  $members = $qMem->fetchAll(PDO::FETCH_ASSOC);
+
+  // Build final list (supervisor first if exists) + members
+  $items = [];
+  if ($super && !empty($super['user_id'])) {
+    $items[] = $super;
+  }
+  $items = array_merge($items, $members);
+
+  ok(['items' => $items]);
+} catch (Throwable $e) {
+  bad($e->getMessage(), 500);
 }

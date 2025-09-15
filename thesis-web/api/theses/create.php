@@ -1,46 +1,62 @@
 <?php
-require_once __DIR__ . '/_bootstrap.php';
-require_role('student');
+header('Content-Type: application/json; charset=utf-8');
+@require_once __DIR__ . '/../utils/bootstrap.php';
+@require_once __DIR__ . '/../utils/auth_guard.php';
 
-$data = read_json_body();
-$topic_id = (string)($data['topic_id'] ?? '');
-
-if ($topic_id === '') json_err('topic_id is required', 422);
-
-// find supervisor from topic
-$stm = $pdo->prepare("SELECT supervisor_id FROM topics WHERE id = :id");
-$stm->execute([':id'=>$topic_id]);
-$topic = $stm->fetch();
-if (!$topic) json_err('Topic not found', 404);
-
-// ensure no other active/under_review/under_assignment thesis for this student
-$chk = $pdo->prepare("
-  SELECT COUNT(*) AS c FROM theses
-  WHERE student_id = :sid AND status IN ('under_assignment','active','under_review')
-");
-$chk->execute([':sid'=>$user['id']]);
-if ((int)$chk->fetch()['c'] > 0) json_err('You already have an active thesis', 409);
-
-$id = null;
-$pdo->beginTransaction();
 try {
-  $id = bin2hex(random_bytes(16));
-  $ins = $pdo->prepare("
-    INSERT INTO theses (id, student_id, topic_id, supervisor_id, status)
-    VALUES (UNHEX(REPLACE(:id, '-', '')), :sid, :tid, :sup, 'under_assignment')
-  ");
-  // Above UNHEX trick expects hex-uuid; we prefer to just use UUID() server-side:
-  $ins = $pdo->prepare("
-    INSERT INTO theses (id, student_id, topic_id, supervisor_id, status)
-    VALUES (UUID(), :sid, :tid, :sup, 'under_assignment')
-  ");
-  $ins->execute([':sid'=>$user['id'], ':tid'=>$topic_id, ':sup'=>$topic['supervisor_id']]);
-  // fetch the id we just created
-  $id = $pdo->query("SELECT id FROM theses WHERE student_id=".$pdo->quote($user['id'])." ORDER BY created_at DESC LIMIT 1")->fetchColumn();
-  $pdo->commit();
-} catch (Throwable $e) {
-  $pdo->rollBack();
-  json_err('DB error: '.$e->getMessage(), 500);
-}
+  ensure_logged_in();
 
-json_ok(['thesis_id'=>$id], 201);
+  // Δέχεται είτε multipart (file upload) είτε JSON (link)
+  $isMultipart = !empty($_FILES);
+
+  if ($isMultipart) {
+    $thesis_id = $_POST['thesis_id'] ?? null;
+    $kind      = $_POST['kind']      ?? 'other';
+    if (!$thesis_id || !isset($_FILES['file'])) {
+      echo json_encode(['ok'=>false,'error'=>'thesis_id and file required']); exit;
+    }
+
+    // Αποθήκευση αρχείου (προσαρμόζεις paths/ονόματα)
+    $dir = __DIR__ . '/../../uploads/resources';
+    if (!is_dir($dir)) mkdir($dir,0777,true);
+
+    $fname = basename($_FILES['file']['name']);
+    $dest  = $dir . '/' . uniqid().'_'.$fname;
+    if (!move_uploaded_file($_FILES['file']['tmp_name'],$dest)) {
+      echo json_encode(['ok'=>false,'error'=>'upload failed']); exit;
+    }
+
+    $urlPath = '/uploads/resources/'.basename($dest);
+
+    $sql = "INSERT INTO resources (thesis_id, kind, url_or_path, created_at)
+            VALUES (?,?,?,NOW())";
+    $st = $pdo->prepare($sql);
+    $st->execute([$thesis_id,$kind,$urlPath]);
+    $id = $pdo->lastInsertId();
+
+    echo json_encode(['ok'=>true,'resource_id'=>$id]);
+    exit;
+  }
+  else {
+    // JSON
+    $data = json_decode(file_get_contents('php://input'),true) ?: [];
+    $thesis_id   = $data['thesis_id']   ?? null;
+    $kind        = $data['kind']        ?? 'other';
+    $url_or_path = $data['url_or_path'] ?? null;
+
+    if (!$thesis_id || !$url_or_path) {
+      echo json_encode(['ok'=>false,'error'=>'thesis_id and url_or_path required']); exit;
+    }
+
+    $sql = "INSERT INTO resources (thesis_id, kind, url_or_path, created_at)
+            VALUES (?,?,?,NOW())";
+    $st = $pdo->prepare($sql);
+    $st->execute([$thesis_id,$kind,$url_or_path]);
+    $id = $pdo->lastInsertId();
+
+    echo json_encode(['ok'=>true,'resource_id'=>$id]);
+  }
+} catch(Throwable $e){
+  http_response_code(500);
+  echo json_encode(['ok'=>false,'error'=>'server error']);
+}

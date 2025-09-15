@@ -1,29 +1,51 @@
 <?php
-header('Content-Type: application/json; charset=UTF-8');
+declare(strict_types=1);
+
+require_once __DIR__ . '/../bootstrap.php';
+header('Content-Type: application/json; charset=utf-8');
 
 try {
-  define('MOCK_MODE', true);
+  $pdo = db();
+  $me  = require_login();
 
-  $thesis_id = $_GET['thesis_id'] ?? null;
-  if (!$thesis_id) { echo json_encode(['ok'=>false,'error'=>'thesis_id required']); exit; }
+  $thesisId = trim((string)($_GET['thesis_id'] ?? ''));
+  if ($thesisId === '') bad('Bad request', 400);
 
-  if (MOCK_MODE) {
-    echo json_encode(['ok'=>true,'items'=>[]], JSON_UNESCAPED_UNICODE); exit;
+  // Access check (όπως στα υπόλοιπα endpoints)
+  $can = false;
+  if ($me['role'] === 'student') {
+    $st = $pdo->prepare('SELECT 1 FROM theses WHERE id = ? AND student_id = ? LIMIT 1');
+    $st->execute([$thesisId, $me['id']]);
+    $can = (bool)$st->fetchColumn();
+  } elseif ($me['role'] === 'teacher' || $me['role'] === 'secretariat') {
+    $st = $pdo->prepare('SELECT 1 FROM theses WHERE id = ? AND supervisor_id = ? LIMIT 1');
+    $st->execute([$thesisId, $me['id']]);
+    $can = (bool)$st->fetchColumn();
+    if (!$can) {
+      $st = $pdo->prepare('
+        SELECT 1
+          FROM committee_members cm
+          JOIN persons p ON p.id = cm.person_id
+         WHERE cm.thesis_id = ? AND p.user_id = ?
+         LIMIT 1
+      ');
+      $st->execute([$thesisId, $me['id']]);
+      $can = (bool)$st->fetchColumn();
+    }
   }
+  if (!$can) bad('Forbidden', 403);
 
-  @require_once __DIR__ . '/../utils/bootstrap.php';
-  @require_once __DIR__ . '/../utils/auth_guard.php';
-  if (!function_exists('ensure_logged_in')) { function ensure_logged_in(){} }
-  if (!function_exists('assert_student_owns_thesis')) { function assert_student_owns_thesis($x){return true;} }
+  // ΜΗΝ ζητήσεις "meta" – δεν το χρειάζεται το UI
+  $q = $pdo->prepare('
+    SELECT event_type, from_status, to_status, created_at
+      FROM thesis_timeline
+     WHERE thesis_id = ?
+     ORDER BY created_at DESC
+  ');
+  $q->execute([$thesisId]);
+  $items = $q->fetchAll(PDO::FETCH_ASSOC);
 
-  ensure_logged_in(); assert_student_owns_thesis($thesis_id);
-
-  $sql = "SELECT event_type, from_status, to_status, created_at
-          FROM thesis_history WHERE thesis_id = ? ORDER BY created_at DESC";
-  $st = $pdo->prepare($sql); $st->execute([$thesis_id]);
-  $items = $st->fetchAll(PDO::FETCH_ASSOC) ?: [];
-  echo json_encode(['ok'=>true,'items'=>$items], JSON_UNESCAPED_UNICODE);
-} catch(Throwable $e){
-  http_response_code(500);
-  echo json_encode(['ok'=>false,'error'=>'server error']);
+  ok(['items' => $items]);
+} catch (Throwable $e) {
+  bad($e->getMessage(), 500);
 }

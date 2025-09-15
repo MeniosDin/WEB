@@ -1,44 +1,51 @@
 <?php
-header('Content-Type: application/json; charset=UTF-8');
+declare(strict_types=1);
+
+require_once __DIR__ . '/../bootstrap.php';
+header('Content-Type: application/json; charset=utf-8');
 
 try {
-  // Γύρισέ το σε false όταν κουμπώσεις DB & guards
-  define('MOCK_MODE', true);
+  $pdo = db();
+  $me  = require_login();
 
-  $thesis_id = $_GET['thesis_id'] ?? null;
-  if (!$thesis_id) { echo json_encode(['ok'=>false,'error'=>'thesis_id required']); exit; }
+  $thesisId = trim((string)($_GET['thesis_id'] ?? ''));
+  if ($thesisId === '') bad('Bad request', 400);
 
-  if (MOCK_MODE) {
-    // Κενό αλλά OK → το UI δεν θα γράφει "server error"
-    echo json_encode(['ok'=>true,'item'=>null], JSON_UNESCAPED_UNICODE); 
-    exit;
+  // Access check
+  $can = false;
+  if ($me['role'] === 'student') {
+    $st = $pdo->prepare('SELECT 1 FROM theses WHERE id = ? AND student_id = ? LIMIT 1');
+    $st->execute([$thesisId, $me['id']]);
+    $can = (bool)$st->fetchColumn();
+  } elseif ($me['role'] === 'teacher' || $me['role'] === 'secretariat') {
+    $st = $pdo->prepare('SELECT 1 FROM theses WHERE id = ? AND supervisor_id = ? LIMIT 1');
+    $st->execute([$thesisId, $me['id']]);
+    $can = (bool)$st->fetchColumn();
+    if (!$can) {
+      $st = $pdo->prepare('
+        SELECT 1
+          FROM committee_members cm
+          JOIN persons p ON p.id = cm.person_id
+         WHERE cm.thesis_id = ? AND p.user_id = ?
+         LIMIT 1
+      ');
+      $st->execute([$thesisId, $me['id']]);
+      $can = (bool)$st->fetchColumn();
+    }
   }
+  if (!$can) bad('Forbidden', 403);
 
-  @require_once __DIR__ . '/../utils/bootstrap.php';
-  @require_once __DIR__ . '/../utils/auth_guard.php';
+  // ΜΗΝ ζητήσεις "id" – το UI δεν το χρειάζεται
+  $q = $pdo->prepare('
+    SELECT thesis_id, when_dt, mode, room_or_link, published_at
+      FROM presentations
+     WHERE thesis_id = ?
+     LIMIT 1
+  ');
+  $q->execute([$thesisId]);
+  $item = $q->fetch(PDO::FETCH_ASSOC) ?: null;
 
-  // Fallbacks για dev ώστε να μη ρίχνουν fatal
-  if (!function_exists('ensure_logged_in'))        { function ensure_logged_in(){} }
-  if (!function_exists('assert_student_owns_thesis')) { function assert_student_owns_thesis($x){ return true; } }
-
-  ensure_logged_in();
-  assert_student_owns_thesis($thesis_id);
-
-  $item = null;
-  if (isset($pdo)) {
-    // Προσαρμόσε το σε δικά σου table/columns αν διαφέρουν
-    $sql = "SELECT when_dt, mode, room_or_link, published_at
-            FROM presentations
-            WHERE thesis_id = ?
-            LIMIT 1";
-    $st = $pdo->prepare($sql);
-    $st->execute([$thesis_id]);
-    $row = $st->fetch(PDO::FETCH_ASSOC);
-    if ($row) $item = $row;
-  }
-
-  echo json_encode(['ok'=>true,'item'=>$item], JSON_UNESCAPED_UNICODE);
+  ok(['item' => $item]);
 } catch (Throwable $e) {
-  http_response_code(500);
-  echo json_encode(['ok'=>false,'error'=>'server error']);
+  bad($e->getMessage(), 500);
 }

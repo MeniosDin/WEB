@@ -1,62 +1,61 @@
 <?php
-header('Content-Type: application/json; charset=utf-8');
-@require_once __DIR__ . '/../utils/bootstrap.php';
-@require_once __DIR__ . '/../utils/auth_guard.php';
+// /api/resources/create.php
+declare(strict_types=1);
+require_once __DIR__ . '/../bootstrap.php';
+$me  = require_login();  // student ή teacher ή admin
+$pdo = db();
 
-try {
-  ensure_logged_in();
+/* body */
+$isMultipart = (stripos($_SERVER['CONTENT_TYPE'] ?? '', 'multipart/') === 0);
+$in = $isMultipart ? $_POST : (json_decode(file_get_contents('php://input'), true) ?: $_POST);
 
-  // Δέχεται είτε multipart (file upload) είτε JSON (link)
-  $isMultipart = !empty($_FILES);
+$thesis_id = trim((string)($in['thesis_id'] ?? ''));
+$kind      = trim((string)($in['kind'] ?? 'draft')); // draft|code|video|image|other
+if ($thesis_id === '') { http_response_code(422); echo json_encode(['ok'=>false,'error'=>'thesis_id required']); exit; }
 
-  if ($isMultipart) {
-    $thesis_id = $_POST['thesis_id'] ?? null;
-    $kind      = $_POST['kind']      ?? 'other';
-    if (!$thesis_id || !isset($_FILES['file'])) {
-      echo json_encode(['ok'=>false,'error'=>'thesis_id and file required']); exit;
-    }
-
-    // Αποθήκευση αρχείου (προσαρμόζεις paths/ονόματα)
-    $dir = __DIR__ . '/../../uploads/resources';
-    if (!is_dir($dir)) mkdir($dir,0777,true);
-
-    $fname = basename($_FILES['file']['name']);
-    $dest  = $dir . '/' . uniqid().'_'.$fname;
-    if (!move_uploaded_file($_FILES['file']['tmp_name'],$dest)) {
-      echo json_encode(['ok'=>false,'error'=>'upload failed']); exit;
-    }
-
-    $urlPath = '/uploads/resources/'.basename($dest);
-
-    $sql = "INSERT INTO resources (thesis_id, kind, url_or_path, created_at)
-            VALUES (?,?,?,NOW())";
-    $st = $pdo->prepare($sql);
-    $st->execute([$thesis_id,$kind,$urlPath]);
-    $id = $pdo->lastInsertId();
-
-    echo json_encode(['ok'=>true,'resource_id'=>$id]);
-    exit;
-  }
-  else {
-    // JSON
-    $data = json_decode(file_get_contents('php://input'),true) ?: [];
-    $thesis_id   = $data['thesis_id']   ?? null;
-    $kind        = $data['kind']        ?? 'other';
-    $url_or_path = $data['url_or_path'] ?? null;
-
-    if (!$thesis_id || !$url_or_path) {
-      echo json_encode(['ok'=>false,'error'=>'thesis_id and url_or_path required']); exit;
-    }
-
-    $sql = "INSERT INTO resources (thesis_id, kind, url_or_path, created_at)
-            VALUES (?,?,?,NOW())";
-    $st = $pdo->prepare($sql);
-    $st->execute([$thesis_id,$kind,$url_or_path]);
-    $id = $pdo->lastInsertId();
-
-    echo json_encode(['ok'=>true,'resource_id'=>$id]);
-  }
-} catch(Throwable $e){
-  http_response_code(500);
-  echo json_encode(['ok'=>false,'error'=>'server error']);
+/* Δικαιώματα:
+   - Student: πρέπει η thesis να ανήκει στον φοιτητή
+   - Teacher/Admin: αφήνουμε το upload (όπως ήδη δούλευε για καθηγητή) */
+if ($me['role'] === 'student') {
+  $st = $pdo->prepare("SELECT 1 FROM theses WHERE id=? AND student_id=?");
+  $st->execute([$thesis_id, $me['id']]);
+  if (!$st->fetchColumn()) { http_response_code(403); echo json_encode(['ok'=>false,'error'=>'Not allowed']); exit; }
 }
+
+$publicUrl = null;
+
+if ($isMultipart && isset($_FILES['file']) && ($_FILES['file']['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_OK) {
+  // επιτρέπεις μόνο PDF (ασφαλής προεπιλογή)
+  $mime = mime_content_type($_FILES['file']['tmp_name']) ?: '';
+  $ext  = strtolower(pathinfo($_FILES['file']['name'], PATHINFO_EXTENSION));
+  if ($ext !== 'pdf' || stripos($mime,'pdf') === false) {
+    http_response_code(415);
+    echo json_encode(['ok'=>false,'error'=>'Μόνο PDF επιτρέπεται'], JSON_UNESCAPED_UNICODE); exit;
+  }
+
+  // Φάκελος: /public/uploads/theses/{thesis_id}/
+  $safe = preg_replace('/[^a-zA-Z0-9\-_]/','_', $thesis_id);
+  $base = dirname(__DIR__); // project root
+  $dir  = $base . '/public/uploads/theses/' . $safe;
+  if (!is_dir($dir)) @mkdir($dir, 0775, true);
+
+  $fname = 'draft_'.date('Ymd_His').'.pdf';
+  $dest  = $dir . '/' . $fname;
+
+  if (!move_uploaded_file($_FILES['file']['tmp_name'], $dest)) {
+    http_response_code(400);
+    echo json_encode(['ok'=>false,'error'=>'Αποτυχία μεταφόρτωσης'], JSON_UNESCAPED_UNICODE); exit;
+  }
+  $publicUrl = '/uploads/theses/' . $safe . '/' . $fname;
+} else {
+  /* εναλλακτικά: δήλωση link */
+  $publicUrl = trim((string)($in['url_or_path'] ?? ''));
+  if ($publicUrl === '') { http_response_code(422); echo json_encode(['ok'=>false,'error'=>'url_or_path or file required']); exit; }
+}
+
+if (!in_array($kind, ['draft','code','video','image','other'], true)) $kind = 'other';
+
+$ins = $pdo->prepare("INSERT INTO resources(thesis_id, kind, url_or_path) VALUES (?,?,?)");
+$ins->execute([$thesis_id, $kind, $publicUrl]);
+
+echo json_encode(['ok'=>true,'item'=>['thesis_id'=>$thesis_id,'kind'=>$kind,'url_or_path'=>$publicUrl]], JSON_UNESCAPED_UNICODE);
