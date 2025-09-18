@@ -2,10 +2,10 @@
 -- version 5.2.1
 -- https://www.phpmyadmin.net/
 --
--- Εξυπηρετητής: 127.0.0.1:3307
--- Χρόνος δημιουργίας: 16 Σεπ 2025 στις 00:35:32
--- Έκδοση διακομιστή: 10.4.32-MariaDB
--- Έκδοση PHP: 8.2.12
+-- Host: 127.0.0.1:3307
+-- Generation Time: Sep 18, 2025 at 06:03 PM
+-- Server version: 10.4.32-MariaDB
+-- PHP Version: 8.2.12
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -18,13 +18,13 @@ SET time_zone = "+00:00";
 /*!40101 SET NAMES utf8mb4 */;
 
 --
--- Βάση δεδομένων: `thesis_db`
+-- Database: `thesis_db`
 --
 
 -- --------------------------------------------------------
 
 --
--- Δομή πίνακα για τον πίνακα `committee_invitations`
+-- Table structure for table `committee_invitations`
 --
 
 CREATE TABLE `committee_invitations` (
@@ -39,13 +39,16 @@ CREATE TABLE `committee_invitations` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Άδειασμα δεδομένων του πίνακα `committee_invitations`
+-- Dumping data for table `committee_invitations`
 --
 
 INSERT INTO `committee_invitations` (`id`, `thesis_id`, `person_id`, `invited_at`, `status`, `accepted_at`, `rejected_at`, `responded_at`) VALUES
 ('537b11e4-9250-11f0-9e34-04bf1b4ee6d7', '45b3366e-9250-11f0-9e34-04bf1b4ee6d7', 'f11fb1bf-8e6d-11f0-8503-d8bbc1070448', '2025-09-15 16:23:19', 'canceled', NULL, NULL, '2025-09-15 16:23:55'),
 ('54303e62-9250-11f0-9e34-04bf1b4ee6d7', '45b3366e-9250-11f0-9e34-04bf1b4ee6d7', 'f12884f1-8e6d-11f0-8503-d8bbc1070448', '2025-09-15 16:23:20', 'accepted', NULL, NULL, '2025-09-15 16:23:44'),
 ('563eef08-9250-11f0-9e34-04bf1b4ee6d7', '45b3366e-9250-11f0-9e34-04bf1b4ee6d7', 'f1274106-8e6d-11f0-8503-d8bbc1070448', '2025-09-15 16:23:23', 'accepted', NULL, NULL, '2025-09-15 16:23:55'),
+('6347ceed-93e1-11f0-8503-d8bbc1070448', '1fd5421d-93d3-11f0-8503-d8bbc1070448', 'f11d75b7-8e6d-11f0-8503-d8bbc1070448', '2025-09-17 16:14:20', 'accepted', NULL, NULL, '2025-09-17 16:14:47'),
+('643e6a8d-93e1-11f0-8503-d8bbc1070448', '1fd5421d-93d3-11f0-8503-d8bbc1070448', 'f1274106-8e6d-11f0-8503-d8bbc1070448', '2025-09-17 16:14:21', 'accepted', NULL, NULL, '2025-09-17 16:15:10'),
+('658db7d7-93e1-11f0-8503-d8bbc1070448', '1fd5421d-93d3-11f0-8503-d8bbc1070448', 'f12884f1-8e6d-11f0-8503-d8bbc1070448', '2025-09-17 16:14:24', 'canceled', NULL, NULL, '2025-09-17 16:15:10'),
 ('6cc17603-924d-11f0-9e34-04bf1b4ee6d7', 'ba203980-9247-11f0-9e34-04bf1b4ee6d7', 'f1274106-8e6d-11f0-8503-d8bbc1070448', '2025-09-15 16:02:34', 'accepted', NULL, NULL, '2025-09-15 16:03:04'),
 ('6eb557b5-924d-11f0-9e34-04bf1b4ee6d7', 'ba203980-9247-11f0-9e34-04bf1b4ee6d7', 'f11fb1bf-8e6d-11f0-8503-d8bbc1070448', '2025-09-15 16:02:38', 'accepted', NULL, NULL, '2025-09-15 16:02:49'),
 ('9b3a8716-919c-11f0-9e34-04bf1b4ee6d7', 'f11d422b-8e6d-11f0-8503-d8bbc1070448', 'f11fb1bf-8e6d-11f0-8503-d8bbc1070448', '2025-09-14 18:56:57', 'accepted', '2025-09-14 22:03:10', NULL, '2025-09-14 19:03:10'),
@@ -55,7 +58,7 @@ INSERT INTO `committee_invitations` (`id`, `thesis_id`, `person_id`, `invited_at
 ('f12c9c26-8e6d-11f0-8503-d8bbc1070448', 'f12836e5-8e6d-11f0-8503-d8bbc1070448', 'f12884f1-8e6d-11f0-8503-d8bbc1070448', '2025-09-10 17:45:29', 'accepted', NULL, NULL, NULL);
 
 --
--- Δείκτες `committee_invitations`
+-- Triggers `committee_invitations`
 --
 DELIMITER $$
 CREATE TRIGGER `trg_comm_inv_accepted_timeline` AFTER UPDATE ON `committee_invitations` FOR EACH ROW BEGIN
@@ -75,7 +78,7 @@ DELIMITER ;
 -- --------------------------------------------------------
 
 --
--- Δομή πίνακα για τον πίνακα `committee_members`
+-- Table structure for table `committee_members`
 --
 
 CREATE TABLE `committee_members` (
@@ -87,17 +90,19 @@ CREATE TABLE `committee_members` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Άδειασμα δεδομένων του πίνακα `committee_members`
+-- Dumping data for table `committee_members`
 --
 
 INSERT INTO `committee_members` (`id`, `thesis_id`, `person_id`, `role_in_committee`, `added_at`) VALUES
 ('45b42727-9250-11f0-9e34-04bf1b4ee6d7', '45b3366e-9250-11f0-9e34-04bf1b4ee6d7', 'f11d75b7-8e6d-11f0-8503-d8bbc1070448', 'supervisor', '2025-09-15 16:22:56'),
 ('62590c29-9250-11f0-9e34-04bf1b4ee6d7', '45b3366e-9250-11f0-9e34-04bf1b4ee6d7', 'f12884f1-8e6d-11f0-8503-d8bbc1070448', 'member', '2025-09-15 16:23:44'),
 ('693fef9d-9250-11f0-9e34-04bf1b4ee6d7', '45b3366e-9250-11f0-9e34-04bf1b4ee6d7', 'f1274106-8e6d-11f0-8503-d8bbc1070448', 'member', '2025-09-15 16:23:55'),
+('73a90894-93e1-11f0-8503-d8bbc1070448', '1fd5421d-93d3-11f0-8503-d8bbc1070448', 'f11d75b7-8e6d-11f0-8503-d8bbc1070448', 'member', '2025-09-17 16:14:47'),
 ('75ba3b58-924d-11f0-9e34-04bf1b4ee6d7', 'ba203980-9247-11f0-9e34-04bf1b4ee6d7', 'f11fb1bf-8e6d-11f0-8503-d8bbc1070448', 'member', '2025-09-15 16:02:49'),
 ('77f14738-9009-11f0-8503-d8bbc1070448', '77eedcc1-9009-11f0-8503-d8bbc1070448', 'f11d75b7-8e6d-11f0-8503-d8bbc1070448', 'supervisor', '2025-09-12 18:51:16'),
 ('79a575d2-919d-11f0-9e34-04bf1b4ee6d7', 'f11d422b-8e6d-11f0-8503-d8bbc1070448', 'f11fb1bf-8e6d-11f0-8503-d8bbc1070448', 'member', '2025-09-14 19:03:10'),
 ('7f538378-924d-11f0-9e34-04bf1b4ee6d7', 'ba203980-9247-11f0-9e34-04bf1b4ee6d7', 'f1274106-8e6d-11f0-8503-d8bbc1070448', 'member', '2025-09-15 16:03:04'),
+('815e3c16-93e1-11f0-8503-d8bbc1070448', '1fd5421d-93d3-11f0-8503-d8bbc1070448', 'f1274106-8e6d-11f0-8503-d8bbc1070448', 'member', '2025-09-17 16:15:10'),
 ('97d40994-8f7f-11f0-8503-d8bbc1070448', '97d2d4d1-8f7f-11f0-8503-d8bbc1070448', 'f12884f1-8e6d-11f0-8503-d8bbc1070448', 'supervisor', '2025-09-12 02:24:20'),
 ('ba22b69d-9247-11f0-9e34-04bf1b4ee6d7', 'ba203980-9247-11f0-9e34-04bf1b4ee6d7', 'f12884f1-8e6d-11f0-8503-d8bbc1070448', 'supervisor', '2025-09-15 15:21:47'),
 ('d2979129-91a5-11f0-9e34-04bf1b4ee6d7', 'f11d422b-8e6d-11f0-8503-d8bbc1070448', 'f1274106-8e6d-11f0-8503-d8bbc1070448', 'member', '2025-09-14 20:02:55'),
@@ -111,7 +116,7 @@ INSERT INTO `committee_members` (`id`, `thesis_id`, `person_id`, `role_in_commit
 -- --------------------------------------------------------
 
 --
--- Δομή πίνακα για τον πίνακα `events_log`
+-- Table structure for table `events_log`
 --
 
 CREATE TABLE `events_log` (
@@ -126,19 +131,34 @@ CREATE TABLE `events_log` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Άδειασμα δεδομένων του πίνακα `events_log`
+-- Dumping data for table `events_log`
 --
 
 INSERT INTO `events_log` (`id`, `thesis_id`, `actor_id`, `event_type`, `from_status`, `to_status`, `details`, `created_at`) VALUES
+('01c0d9da-93dc-11f0-8503-d8bbc1070448', '1fd5421d-93d3-11f0-8503-d8bbc1070448', NULL, 'status_change', 'under_assignment', 'canceled', NULL, '2025-09-17 15:35:49'),
+('099191d9-93dc-11f0-8503-d8bbc1070448', '1fd5421d-93d3-11f0-8503-d8bbc1070448', NULL, 'status_change', 'canceled', 'under_assignment', NULL, '2025-09-17 15:36:02'),
+('115de714-93dc-11f0-8503-d8bbc1070448', '1fd5421d-93d3-11f0-8503-d8bbc1070448', NULL, 'status_change', 'under_assignment', 'canceled', NULL, '2025-09-17 15:36:15'),
+('165ff29e-93e1-11f0-8503-d8bbc1070448', '1fd5421d-93d3-11f0-8503-d8bbc1070448', NULL, 'status_change', 'under_assignment', 'canceled', NULL, '2025-09-17 16:12:11'),
+('2d914008-93dc-11f0-8503-d8bbc1070448', '1fd5421d-93d3-11f0-8503-d8bbc1070448', NULL, 'status_change', 'canceled', 'under_assignment', NULL, '2025-09-17 15:37:02'),
+('3dc07923-93d3-11f0-8503-d8bbc1070448', '1fd5421d-93d3-11f0-8503-d8bbc1070448', NULL, 'status_change', 'under_assignment', 'canceled', NULL, '2025-09-17 14:33:04'),
+('4a74ca0a-93dc-11f0-8503-d8bbc1070448', '1fd5421d-93d3-11f0-8503-d8bbc1070448', NULL, 'status_change', 'under_assignment', 'canceled', NULL, '2025-09-17 15:37:51'),
+('4ca81e72-93cd-11f0-8503-d8bbc1070448', 'cae11492-93c5-11f0-8503-d8bbc1070448', NULL, 'status_change', 'under_assignment', 'canceled', NULL, '2025-09-17 13:50:32'),
+('526a9cf5-93e1-11f0-8503-d8bbc1070448', '1fd5421d-93d3-11f0-8503-d8bbc1070448', NULL, 'status_change', 'canceled', 'under_assignment', NULL, '2025-09-17 16:13:51'),
 ('6941718c-9250-11f0-9e34-04bf1b4ee6d7', '45b3366e-9250-11f0-9e34-04bf1b4ee6d7', NULL, 'status_change', 'under_assignment', 'active', NULL, '2025-09-15 16:23:55'),
 ('7f563cb9-924d-11f0-9e34-04bf1b4ee6d7', 'ba203980-9247-11f0-9e34-04bf1b4ee6d7', NULL, 'status_change', 'under_assignment', 'active', NULL, '2025-09-15 16:03:04'),
 ('80b4f965-926f-11f0-9e34-04bf1b4ee6d7', '45b3366e-9250-11f0-9e34-04bf1b4ee6d7', NULL, 'status_change', 'active', 'under_review', NULL, '2025-09-15 20:06:29'),
-('d2982b64-91a5-11f0-9e34-04bf1b4ee6d7', 'f11d422b-8e6d-11f0-8503-d8bbc1070448', NULL, 'status_change', 'under_assignment', 'active', NULL, '2025-09-14 20:02:55');
+('815eb709-93e1-11f0-8503-d8bbc1070448', '1fd5421d-93d3-11f0-8503-d8bbc1070448', NULL, 'status_change', 'under_assignment', 'active', NULL, '2025-09-17 16:15:10'),
+('c9d3407c-93fd-11f0-8503-d8bbc1070448', '1fd5421d-93d3-11f0-8503-d8bbc1070448', NULL, 'status_change', 'active', 'under_review', NULL, '2025-09-17 19:37:38'),
+('cf8b848b-93d1-11f0-8503-d8bbc1070448', 'b2d0e2f7-93d1-11f0-8503-d8bbc1070448', NULL, 'status_change', 'under_assignment', 'canceled', NULL, '2025-09-17 14:22:50'),
+('d2982b64-91a5-11f0-9e34-04bf1b4ee6d7', 'f11d422b-8e6d-11f0-8503-d8bbc1070448', NULL, 'status_change', 'under_assignment', 'active', NULL, '2025-09-14 20:02:55'),
+('dd9fd5b4-93bd-11f0-8503-d8bbc1070448', 'f11d422b-8e6d-11f0-8503-d8bbc1070448', NULL, 'status_change', 'active', 'under_review', NULL, '2025-09-17 12:00:04'),
+('ed6b6e2a-93e0-11f0-8503-d8bbc1070448', '1fd5421d-93d3-11f0-8503-d8bbc1070448', NULL, 'status_change', 'canceled', 'under_assignment', NULL, '2025-09-17 16:11:02'),
+('f7b11eb0-93da-11f0-8503-d8bbc1070448', '1fd5421d-93d3-11f0-8503-d8bbc1070448', NULL, 'status_change', 'canceled', 'under_assignment', NULL, '2025-09-17 15:28:22');
 
 -- --------------------------------------------------------
 
 --
--- Δομή πίνακα για τον πίνακα `exam_minutes`
+-- Table structure for table `exam_minutes`
 --
 
 CREATE TABLE `exam_minutes` (
@@ -155,7 +175,7 @@ CREATE TABLE `exam_minutes` (
 -- --------------------------------------------------------
 
 --
--- Δομή πίνακα για τον πίνακα `grades`
+-- Table structure for table `grades`
 --
 
 CREATE TABLE `grades` (
@@ -169,14 +189,14 @@ CREATE TABLE `grades` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Άδειασμα δεδομένων του πίνακα `grades`
+-- Dumping data for table `grades`
 --
 
 INSERT INTO `grades` (`id`, `thesis_id`, `person_id`, `rubric_id`, `criteria_scores_json`, `total`, `created_at`) VALUES
 ('f13ce664-8e6d-11f0-8503-d8bbc1070448', 'f12836e5-8e6d-11f0-8503-d8bbc1070448', 'f12884f1-8e6d-11f0-8503-d8bbc1070448', 'f11816d7-8e6d-11f0-8503-d8bbc1070448', '{\"goals\": 9, \"duration\": 8.5, \"text\": 9, \"presentation\": 9.2}', 8.95, '2025-09-10 17:45:29');
 
 --
--- Δείκτες `grades`
+-- Triggers `grades`
 --
 DELIMITER $$
 CREATE TRIGGER `trg_grades_total_bi` BEFORE INSERT ON `grades` FOR EACH ROW BEGIN
@@ -232,7 +252,7 @@ DELIMITER ;
 -- --------------------------------------------------------
 
 --
--- Δομή πίνακα για τον πίνακα `grading_rubrics`
+-- Table structure for table `grading_rubrics`
 --
 
 CREATE TABLE `grading_rubrics` (
@@ -245,7 +265,7 @@ CREATE TABLE `grading_rubrics` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Άδειασμα δεδομένων του πίνακα `grading_rubrics`
+-- Dumping data for table `grading_rubrics`
 --
 
 INSERT INTO `grading_rubrics` (`id`, `code`, `title`, `weights_json`, `effective_from`, `effective_to`) VALUES
@@ -254,7 +274,7 @@ INSERT INTO `grading_rubrics` (`id`, `code`, `title`, `weights_json`, `effective
 -- --------------------------------------------------------
 
 --
--- Δομή πίνακα για τον πίνακα `notes`
+-- Table structure for table `notes`
 --
 
 CREATE TABLE `notes` (
@@ -268,7 +288,7 @@ CREATE TABLE `notes` (
 -- --------------------------------------------------------
 
 --
--- Δομή πίνακα για τον πίνακα `persons`
+-- Table structure for table `persons`
 --
 
 CREATE TABLE `persons` (
@@ -285,7 +305,7 @@ CREATE TABLE `persons` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Άδειασμα δεδομένων του πίνακα `persons`
+-- Dumping data for table `persons`
 --
 
 INSERT INTO `persons` (`id`, `is_internal`, `user_id`, `first_name`, `last_name`, `email`, `affiliation`, `role_category`, `has_phd`, `created_at`) VALUES
@@ -298,7 +318,7 @@ INSERT INTO `persons` (`id`, `is_internal`, `user_id`, `first_name`, `last_name`
 -- --------------------------------------------------------
 
 --
--- Δομή πίνακα για τον πίνακα `policies`
+-- Table structure for table `policies`
 --
 
 CREATE TABLE `policies` (
@@ -307,7 +327,7 @@ CREATE TABLE `policies` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Άδειασμα δεδομένων του πίνακα `policies`
+-- Dumping data for table `policies`
 --
 
 INSERT INTO `policies` (`key_name`, `value_json`) VALUES
@@ -317,7 +337,7 @@ INSERT INTO `policies` (`key_name`, `value_json`) VALUES
 -- --------------------------------------------------------
 
 --
--- Δομή πίνακα για τον πίνακα `presentation`
+-- Table structure for table `presentation`
 --
 
 CREATE TABLE `presentation` (
@@ -333,7 +353,7 @@ CREATE TABLE `presentation` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Δείκτες `presentation`
+-- Triggers `presentation`
 --
 DELIMITER $$
 CREATE TRIGGER `trg_presentation_validate_bi` BEFORE INSERT ON `presentation` FOR EACH ROW BEGIN
@@ -433,7 +453,7 @@ DELIMITER ;
 -- --------------------------------------------------------
 
 --
--- Δομή πίνακα για τον πίνακα `presentations`
+-- Table structure for table `presentations`
 --
 
 CREATE TABLE `presentations` (
@@ -447,7 +467,7 @@ CREATE TABLE `presentations` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Δείκτες `presentations`
+-- Triggers `presentations`
 --
 DELIMITER $$
 CREATE TRIGGER `trg_presentations_timeline` AFTER INSERT ON `presentations` FOR EACH ROW BEGIN
@@ -465,34 +485,46 @@ DELIMITER ;
 -- --------------------------------------------------------
 
 --
--- Δομή πίνακα για τον πίνακα `resources`
+-- Table structure for table `resources`
 --
 
 CREATE TABLE `resources` (
   `id` char(36) NOT NULL DEFAULT uuid(),
   `thesis_id` char(36) NOT NULL,
-  `kind` enum('draft','code','video','image','other') NOT NULL,
+  `kind` enum('draft','link','code','video','image','other') NOT NULL,
   `url_or_path` text NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Άδειασμα δεδομένων του πίνακα `resources`
+-- Dumping data for table `resources`
 --
 
 INSERT INTO `resources` (`id`, `thesis_id`, `kind`, `url_or_path`, `created_at`) VALUES
 ('07817bc9-91b4-11f0-9e34-04bf1b4ee6d7', 'f11d422b-8e6d-11f0-8503-d8bbc1070448', 'draft', '/uploads/theses/f11d422b-8e6d-11f0-8503-d8bbc1070448/draft_20250914_234437.pdf', '2025-09-14 21:44:37'),
+('09dcd907-949e-11f0-bdf4-d8bbc1070448', '1fd5421d-93d3-11f0-8503-d8bbc1070448', 'draft', '/uploads/theses/1fd5421d-93d3-11f0-8503-d8bbc1070448/draft_20250918_164453.pdf', '2025-09-18 14:44:53'),
 ('169cd2d8-919d-11f0-9e34-04bf1b4ee6d7', 'f11d422b-8e6d-11f0-8503-d8bbc1070448', 'draft', '/uploads/theses/f11d422b-8e6d-11f0-8503-d8bbc1070448/draft_20250914_210024.pdf', '2025-09-14 19:00:24'),
-('571bad36-91c0-11f0-9e34-04bf1b4ee6d7', 'f11d422b-8e6d-11f0-8503-d8bbc1070448', 'other', 'https://drive.google.com/file/d/1AbCdEFgH12345/view?usp=share_link', '2025-09-14 23:12:44'),
+('2bbc1ba8-94a5-11f0-bdf4-d8bbc1070448', '1fd5421d-93d3-11f0-8503-d8bbc1070448', 'draft', '/uploads/resources/68cc26dd4216c0.29886926_Ergastiriaki_Askisi_24-25-1.0.pdf', '2025-09-18 15:35:57'),
+('46c001cd-94a5-11f0-bdf4-d8bbc1070448', '1fd5421d-93d3-11f0-8503-d8bbc1070448', 'draft', '/uploads/resources/68cc270a91db55.26223905_Ergastiriaki_Askisi_24-25-1.0.pdf', '2025-09-18 15:36:42'),
+('46fea976-9406-11f0-8503-d8bbc1070448', '1fd5421d-93d3-11f0-8503-d8bbc1070448', 'draft', '/uploads/theses/1fd5421d-93d3-11f0-8503-d8bbc1070448/draft_20250917_223823.pdf', '2025-09-17 20:38:23'),
+('545fc9de-94a5-11f0-bdf4-d8bbc1070448', '1fd5421d-93d3-11f0-8503-d8bbc1070448', 'draft', '/uploads/resources/68cc27216ef8f6.54132700_diplomatiki_ergasia_tmiyp_0.pdf', '2025-09-18 15:37:05'),
+('571bad36-91c0-11f0-9e34-04bf1b4ee6d7', 'f11d422b-8e6d-11f0-8503-d8bbc1070448', 'link', 'https://drive.google.com/file/d/1AbCdEFgH12345/view?usp=share_link', '2025-09-14 23:12:44'),
+('74205e32-9400-11f0-8503-d8bbc1070448', '1fd5421d-93d3-11f0-8503-d8bbc1070448', 'draft', '/uploads/theses/1fd5421d-93d3-11f0-8503-d8bbc1070448/draft_20250917_215642.pdf', '2025-09-17 19:56:42'),
 ('93e719c7-9266-11f0-9e34-04bf1b4ee6d7', '45b3366e-9250-11f0-9e34-04bf1b4ee6d7', 'draft', '/uploads/theses/45b3366e-9250-11f0-9e34-04bf1b4ee6d7/draft_20250915_210236.pdf', '2025-09-15 19:02:36'),
-('9edc391b-91b4-11f0-9e34-04bf1b4ee6d7', 'f11d422b-8e6d-11f0-8503-d8bbc1070448', 'other', 'https://drive.google.com/file/d/1AbCdEfGh12345/view?usp=share_link', '2025-09-14 21:48:51'),
+('9edc391b-91b4-11f0-9e34-04bf1b4ee6d7', 'f11d422b-8e6d-11f0-8503-d8bbc1070448', 'link', 'https://drive.google.com/file/d/1AbCdEfGh12345/view?usp=share_link', '2025-09-14 21:48:51'),
 ('a0a5665e-91c0-11f0-9e34-04bf1b4ee6d7', 'f11d422b-8e6d-11f0-8503-d8bbc1070448', 'draft', '/uploads/theses/f11d422b-8e6d-11f0-8503-d8bbc1070448/draft_20250915_011448.pdf', '2025-09-14 23:14:48'),
-('e99d9078-919e-11f0-9e34-04bf1b4ee6d7', 'f11d422b-8e6d-11f0-8503-d8bbc1070448', 'draft', '/uploads/theses/f11d422b-8e6d-11f0-8503-d8bbc1070448/draft_20250914_211327.pdf', '2025-09-14 19:13:27');
+('a90058e8-9404-11f0-8503-d8bbc1070448', '1fd5421d-93d3-11f0-8503-d8bbc1070448', 'draft', '/uploads/theses/1fd5421d-93d3-11f0-8503-d8bbc1070448/draft_20250917_222649.pdf', '2025-09-17 20:26:49'),
+('b00f291c-93be-11f0-8503-d8bbc1070448', 'f11d422b-8e6d-11f0-8503-d8bbc1070448', 'draft', '/uploads/theses/f11d422b-8e6d-11f0-8503-d8bbc1070448/draft_20250917_140557.pdf', '2025-09-17 12:05:57'),
+('b4b6c831-9404-11f0-8503-d8bbc1070448', '1fd5421d-93d3-11f0-8503-d8bbc1070448', 'draft', '/uploads/theses/1fd5421d-93d3-11f0-8503-d8bbc1070448/draft_20250917_222709.pdf', '2025-09-17 20:27:09'),
+('bbae9088-9404-11f0-8503-d8bbc1070448', '1fd5421d-93d3-11f0-8503-d8bbc1070448', 'draft', '/uploads/theses/1fd5421d-93d3-11f0-8503-d8bbc1070448/draft_20250917_222720.pdf', '2025-09-17 20:27:20'),
+('e156323c-9300-11f0-8503-d8bbc1070448', 'f11d422b-8e6d-11f0-8503-d8bbc1070448', 'draft', '/uploads/theses/f11d422b-8e6d-11f0-8503-d8bbc1070448/draft_20250916_152716.pdf', '2025-09-16 13:27:16'),
+('e99d9078-919e-11f0-9e34-04bf1b4ee6d7', 'f11d422b-8e6d-11f0-8503-d8bbc1070448', 'draft', '/uploads/theses/f11d422b-8e6d-11f0-8503-d8bbc1070448/draft_20250914_211327.pdf', '2025-09-14 19:13:27'),
+('fee36486-9403-11f0-8503-d8bbc1070448', '1fd5421d-93d3-11f0-8503-d8bbc1070448', 'draft', '/uploads/theses/1fd5421d-93d3-11f0-8503-d8bbc1070448/draft_20250917_222204.pdf', '2025-09-17 20:22:04');
 
 -- --------------------------------------------------------
 
 --
--- Δομή πίνακα για τον πίνακα `student_eligibility_snapshot`
+-- Table structure for table `student_eligibility_snapshot`
 --
 
 CREATE TABLE `student_eligibility_snapshot` (
@@ -508,7 +540,7 @@ CREATE TABLE `student_eligibility_snapshot` (
 -- --------------------------------------------------------
 
 --
--- Δομή πίνακα για τον πίνακα `theses`
+-- Table structure for table `theses`
 --
 
 CREATE TABLE `theses` (
@@ -534,23 +566,26 @@ CREATE TABLE `theses` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Άδειασμα δεδομένων του πίνακα `theses`
+-- Dumping data for table `theses`
 --
 
 INSERT INTO `theses` (`id`, `student_id`, `topic_id`, `supervisor_id`, `status`, `official_assign_date`, `assigned_at`, `committee_submission_at`, `approval_gs_number`, `approval_gs_year`, `canceled_reason`, `canceled_gs_number`, `canceled_gs_year`, `nimeritis_url`, `nimeritis_deposit_date`, `nimeritis_receipt_path`, `central_grade_submitted_at`, `created_at`, `updated_at`) VALUES
+('1fd5421d-93d3-11f0-8503-d8bbc1070448', 'f118d656-8e6d-11f0-8503-d8bbc1070448', '199d5a0a-93d3-11f0-8503-d8bbc1070448', 'f11a1be2-8e6d-11f0-8503-d8bbc1070448', 'under_review', NULL, '2025-09-17 16:15:10', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2025-09-17 14:32:14', '2025-09-17 19:37:38'),
 ('45b3366e-9250-11f0-9e34-04bf1b4ee6d7', 'f118d73b-8e6d-11f0-8503-d8bbc1070448', 'f096323e-9007-11f0-8503-d8bbc1070448', 'f11a1a41-8e6d-11f0-8503-d8bbc1070448', 'under_review', NULL, '2025-09-15 16:23:55', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2025-09-15 16:22:56', '2025-09-15 20:06:29'),
 ('77eedcc1-9009-11f0-8503-d8bbc1070448', 'f118d69d-8e6d-11f0-8503-d8bbc1070448', '77ea79a8-9009-11f0-8503-d8bbc1070448', 'f11a1a41-8e6d-11f0-8503-d8bbc1070448', 'under_assignment', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2025-09-12 18:51:16', '2025-09-12 18:51:16'),
 ('97d2d4d1-8f7f-11f0-8503-d8bbc1070448', 'f118d6ee-8e6d-11f0-8503-d8bbc1070448', 'dd2d41eb-8f2a-11f0-8503-d8bbc1070448', 'f11a1ca7-8e6d-11f0-8503-d8bbc1070448', 'active', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2025-09-12 02:24:20', '2025-09-12 02:24:20'),
+('b2d0e2f7-93d1-11f0-8503-d8bbc1070448', 'f118d656-8e6d-11f0-8503-d8bbc1070448', 'f11aeee6-8e6d-11f0-8503-d8bbc1070448', 'f11a1be2-8e6d-11f0-8503-d8bbc1070448', 'canceled', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2025-09-17 14:22:01', '2025-09-17 14:22:50'),
 ('ba203980-9247-11f0-9e34-04bf1b4ee6d7', 'f118d778-8e6d-11f0-8503-d8bbc1070448', 'f11aefdb-8e6d-11f0-8503-d8bbc1070448', 'f11a1ca7-8e6d-11f0-8503-d8bbc1070448', 'active', NULL, '2025-09-15 16:03:04', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2025-09-15 15:21:47', '2025-09-15 16:03:04'),
+('cae11492-93c5-11f0-8503-d8bbc1070448', 'f118d656-8e6d-11f0-8503-d8bbc1070448', 'f11bdb90-8e6d-11f0-8503-d8bbc1070448', 'f11a1be2-8e6d-11f0-8503-d8bbc1070448', 'canceled', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2025-09-17 12:56:48', '2025-09-17 13:50:32'),
 ('dd6fe3fc-9009-11f0-8503-d8bbc1070448', 'f118d69d-8e6d-11f0-8503-d8bbc1070448', 'dd6b6d2d-9009-11f0-8503-d8bbc1070448', 'f11a1a41-8e6d-11f0-8503-d8bbc1070448', 'under_assignment', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2025-09-12 18:54:06', '2025-09-12 18:54:06'),
-('f11d422b-8e6d-11f0-8503-d8bbc1070448', 'f118d118-8e6d-11f0-8503-d8bbc1070448', 'f11aed2f-8e6d-11f0-8503-d8bbc1070448', 'f11a1a41-8e6d-11f0-8503-d8bbc1070448', 'active', NULL, '2025-09-14 20:02:55', NULL, NULL, NULL, NULL, NULL, NULL, 'https://nemertes.library.upatras.gr/jspui/handle/10889/12345', '2025-02-05', NULL, NULL, '2025-09-10 17:45:29', '2025-09-14 23:13:56'),
+('f11d422b-8e6d-11f0-8503-d8bbc1070448', 'f118d118-8e6d-11f0-8503-d8bbc1070448', 'f11aed2f-8e6d-11f0-8503-d8bbc1070448', 'f11a1a41-8e6d-11f0-8503-d8bbc1070448', 'under_review', NULL, '2025-09-14 20:02:55', NULL, NULL, NULL, NULL, NULL, NULL, 'https://nemertes.library.upatras.gr/jspui/handle/10889/12345', '2025-02-05', NULL, NULL, '2025-09-10 17:45:29', '2025-09-17 12:00:04'),
 ('f11f5ce6-8e6d-11f0-8503-d8bbc1070448', 'f118d4a7-8e6d-11f0-8503-d8bbc1070448', 'f11aeee6-8e6d-11f0-8503-d8bbc1070448', 'f11a1be2-8e6d-11f0-8503-d8bbc1070448', 'active', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2025-09-10 17:45:29', '2025-09-10 17:45:29'),
 ('f12739f3-8e6d-11f0-8503-d8bbc1070448', 'f118d56b-8e6d-11f0-8503-d8bbc1070448', 'f11aef86-8e6d-11f0-8503-d8bbc1070448', 'f11a1c50-8e6d-11f0-8503-d8bbc1070448', 'under_review', NULL, NULL, '2025-08-11 17:45:29', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2025-09-10 17:45:29', '2025-09-10 17:45:29'),
 ('f12836e5-8e6d-11f0-8503-d8bbc1070448', 'f118d5c4-8e6d-11f0-8503-d8bbc1070448', 'f11aefdb-8e6d-11f0-8503-d8bbc1070448', 'f11a1ca7-8e6d-11f0-8503-d8bbc1070448', 'completed', NULL, '2025-09-10 17:45:29', '2025-08-01 17:45:29', 'GS-2025-01', 2025, NULL, NULL, NULL, 'http://nimeritis.uni.gr/thesis123', '2025-09-10', NULL, NULL, '2025-09-10 17:45:29', '2025-09-10 17:45:29'),
 ('f129b627-8e6d-11f0-8503-d8bbc1070448', 'f118d60e-8e6d-11f0-8503-d8bbc1070448', 'f11af034-8e6d-11f0-8503-d8bbc1070448', 'f11a1cfa-8e6d-11f0-8503-d8bbc1070448', 'canceled', NULL, NULL, NULL, NULL, NULL, 'Ακύρωση λόγω προσωπικών λόγων', NULL, NULL, NULL, NULL, NULL, NULL, '2025-09-10 17:45:29', '2025-09-10 17:45:29');
 
 --
--- Δείκτες `theses`
+-- Triggers `theses`
 --
 DELIMITER $$
 CREATE TRIGGER `trg_complete_requirements` BEFORE UPDATE ON `theses` FOR EACH ROW BEGIN
@@ -640,7 +675,7 @@ DELIMITER ;
 -- --------------------------------------------------------
 
 --
--- Δομή πίνακα για τον πίνακα `thesis_notes`
+-- Table structure for table `thesis_notes`
 --
 
 CREATE TABLE `thesis_notes` (
@@ -652,16 +687,17 @@ CREATE TABLE `thesis_notes` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
--- Άδειασμα δεδομένων του πίνακα `thesis_notes`
+-- Dumping data for table `thesis_notes`
 --
 
 INSERT INTO `thesis_notes` (`id`, `thesis_id`, `author_id`, `text`, `created_at`) VALUES
-('68689410-927e-11f0-9e34-04bf1b4ee6d7', '45b3366e-9250-11f0-9e34-04bf1b4ee6d7', 'f11a1a41-8e6d-11f0-8503-d8bbc1070448', '123', '2025-09-16 00:53:11');
+('68689410-927e-11f0-9e34-04bf1b4ee6d7', '45b3366e-9250-11f0-9e34-04bf1b4ee6d7', 'f11a1a41-8e6d-11f0-8503-d8bbc1070448', '123', '2025-09-16 00:53:11'),
+('fdd6f66a-93bd-11f0-8503-d8bbc1070448', 'f11d422b-8e6d-11f0-8503-d8bbc1070448', 'f11a1a41-8e6d-11f0-8503-d8bbc1070448', 'ηφηφ', '2025-09-17 15:00:58');
 
 -- --------------------------------------------------------
 
 --
--- Δομή πίνακα για τον πίνακα `thesis_resources`
+-- Table structure for table `thesis_resources`
 --
 
 CREATE TABLE `thesis_resources` (
@@ -678,7 +714,7 @@ CREATE TABLE `thesis_resources` (
 -- --------------------------------------------------------
 
 --
--- Δομή πίνακα για τον πίνακα `thesis_timeline`
+-- Table structure for table `thesis_timeline`
 --
 
 CREATE TABLE `thesis_timeline` (
@@ -692,22 +728,39 @@ CREATE TABLE `thesis_timeline` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Άδειασμα δεδομένων του πίνακα `thesis_timeline`
+-- Dumping data for table `thesis_timeline`
 --
 
 INSERT INTO `thesis_timeline` (`id`, `thesis_id`, `event_type`, `from_status`, `to_status`, `details`, `created_at`) VALUES
+('01c0c4dc-93dc-11f0-8503-d8bbc1070448', '1fd5421d-93d3-11f0-8503-d8bbc1070448', 'status_change', 'under_assignment', 'canceled', NULL, '2025-09-17 15:35:49'),
+('09918e5d-93dc-11f0-8503-d8bbc1070448', '1fd5421d-93d3-11f0-8503-d8bbc1070448', 'status_change', 'canceled', 'under_assignment', NULL, '2025-09-17 15:36:02'),
+('115de355-93dc-11f0-8503-d8bbc1070448', '1fd5421d-93d3-11f0-8503-d8bbc1070448', 'status_change', 'under_assignment', 'canceled', NULL, '2025-09-17 15:36:15'),
+('165fe95d-93e1-11f0-8503-d8bbc1070448', '1fd5421d-93d3-11f0-8503-d8bbc1070448', 'status_change', 'under_assignment', 'canceled', NULL, '2025-09-17 16:12:11'),
+('2d910f4d-93dc-11f0-8503-d8bbc1070448', '1fd5421d-93d3-11f0-8503-d8bbc1070448', 'status_change', 'canceled', 'under_assignment', NULL, '2025-09-17 15:37:02'),
+('3dc03f4d-93d3-11f0-8503-d8bbc1070448', '1fd5421d-93d3-11f0-8503-d8bbc1070448', 'status_change', 'under_assignment', 'canceled', NULL, '2025-09-17 14:33:04'),
+('4a74c628-93dc-11f0-8503-d8bbc1070448', '1fd5421d-93d3-11f0-8503-d8bbc1070448', 'status_change', 'under_assignment', 'canceled', NULL, '2025-09-17 15:37:51'),
+('4ca7fdd1-93cd-11f0-8503-d8bbc1070448', 'cae11492-93c5-11f0-8503-d8bbc1070448', 'status_change', 'under_assignment', 'canceled', NULL, '2025-09-17 13:50:32'),
+('526a9786-93e1-11f0-8503-d8bbc1070448', '1fd5421d-93d3-11f0-8503-d8bbc1070448', 'status_change', 'canceled', 'under_assignment', NULL, '2025-09-17 16:13:51'),
 ('6258c870-9250-11f0-9e34-04bf1b4ee6d7', '45b3366e-9250-11f0-9e34-04bf1b4ee6d7', 'committee_invitation_accepted', NULL, NULL, '{\"person_id\": \"f12884f1-8e6d-11f0-8503-d8bbc1070448\"}', '2025-09-15 16:23:44'),
 ('693fdb1c-9250-11f0-9e34-04bf1b4ee6d7', '45b3366e-9250-11f0-9e34-04bf1b4ee6d7', 'committee_invitation_accepted', NULL, NULL, '{\"person_id\": \"f1274106-8e6d-11f0-8503-d8bbc1070448\"}', '2025-09-15 16:23:55'),
 ('69422bca-9250-11f0-9e34-04bf1b4ee6d7', '45b3366e-9250-11f0-9e34-04bf1b4ee6d7', 'status_change', 'under_assignment', 'active', NULL, '2025-09-15 16:23:55'),
+('73a8c280-93e1-11f0-8503-d8bbc1070448', '1fd5421d-93d3-11f0-8503-d8bbc1070448', 'committee_invitation_accepted', NULL, NULL, '{\"person_id\": \"f11d75b7-8e6d-11f0-8503-d8bbc1070448\"}', '2025-09-17 16:14:47'),
 ('75b900fc-924d-11f0-9e34-04bf1b4ee6d7', 'ba203980-9247-11f0-9e34-04bf1b4ee6d7', 'committee_invitation_accepted', NULL, NULL, '{\"person_id\": \"f11fb1bf-8e6d-11f0-8503-d8bbc1070448\"}', '2025-09-15 16:02:49'),
 ('7f52305d-924d-11f0-9e34-04bf1b4ee6d7', 'ba203980-9247-11f0-9e34-04bf1b4ee6d7', 'committee_invitation_accepted', NULL, NULL, '{\"person_id\": \"f1274106-8e6d-11f0-8503-d8bbc1070448\"}', '2025-09-15 16:03:04'),
 ('7f5679ac-924d-11f0-9e34-04bf1b4ee6d7', 'ba203980-9247-11f0-9e34-04bf1b4ee6d7', 'status_change', 'under_assignment', 'active', NULL, '2025-09-15 16:03:04'),
-('80b524d9-926f-11f0-9e34-04bf1b4ee6d7', '45b3366e-9250-11f0-9e34-04bf1b4ee6d7', 'status_change', 'active', 'under_review', NULL, '2025-09-15 20:06:29');
+('80b524d9-926f-11f0-9e34-04bf1b4ee6d7', '45b3366e-9250-11f0-9e34-04bf1b4ee6d7', 'status_change', 'active', 'under_review', NULL, '2025-09-15 20:06:29'),
+('815e28b2-93e1-11f0-8503-d8bbc1070448', '1fd5421d-93d3-11f0-8503-d8bbc1070448', 'committee_invitation_accepted', NULL, NULL, '{\"person_id\": \"f1274106-8e6d-11f0-8503-d8bbc1070448\"}', '2025-09-17 16:15:10'),
+('815eb40e-93e1-11f0-8503-d8bbc1070448', '1fd5421d-93d3-11f0-8503-d8bbc1070448', 'status_change', 'under_assignment', 'active', NULL, '2025-09-17 16:15:10'),
+('c9d2de90-93fd-11f0-8503-d8bbc1070448', '1fd5421d-93d3-11f0-8503-d8bbc1070448', 'status_change', 'active', 'under_review', NULL, '2025-09-17 19:37:38'),
+('cf8b56f0-93d1-11f0-8503-d8bbc1070448', 'b2d0e2f7-93d1-11f0-8503-d8bbc1070448', 'status_change', 'under_assignment', 'canceled', NULL, '2025-09-17 14:22:50'),
+('dd9f3354-93bd-11f0-8503-d8bbc1070448', 'f11d422b-8e6d-11f0-8503-d8bbc1070448', 'status_change', 'active', 'under_review', NULL, '2025-09-17 12:00:04'),
+('ed6b528b-93e0-11f0-8503-d8bbc1070448', '1fd5421d-93d3-11f0-8503-d8bbc1070448', 'status_change', 'canceled', 'under_assignment', NULL, '2025-09-17 16:11:02'),
+('f7b0e1a4-93da-11f0-8503-d8bbc1070448', '1fd5421d-93d3-11f0-8503-d8bbc1070448', 'status_change', 'canceled', 'under_assignment', NULL, '2025-09-17 15:28:22');
 
 -- --------------------------------------------------------
 
 --
--- Δομή πίνακα για τον πίνακα `topics`
+-- Table structure for table `topics`
 --
 
 CREATE TABLE `topics` (
@@ -729,21 +782,22 @@ CREATE TABLE `topics` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Άδειασμα δεδομένων του πίνακα `topics`
+-- Dumping data for table `topics`
 --
 
 INSERT INTO `topics` (`id`, `professor_id`, `supervisor_id`, `assigned_student_id`, `title`, `summary`, `spec_pdf_path`, `is_available`, `provisional_student_id`, `provisional_since`, `provisional_assigned_at`, `pdf_path`, `academic_year`, `created_at`, `updated_at`) VALUES
+('199d5a0a-93d3-11f0-8503-d8bbc1070448', NULL, 'f11a1be2-8e6d-11f0-8503-d8bbc1070448', NULL, 'test1', 'test thema', '/uploads/specs/spec_68cb12a29060e0.86515301.pdf', 0, 'f118d656-8e6d-11f0-8503-d8bbc1070448', '2025-09-17 19:13:51', NULL, NULL, NULL, '2025-09-17 14:32:03', '2025-09-17 19:57:22'),
 ('77ea79a8-9009-11f0-8503-d8bbc1070448', NULL, 'f11a1a41-8e6d-11f0-8503-d8bbc1070448', NULL, 'Demo Θέμα για έλεγχο UI', 'Δοκιμαστικό θέμα για τη λίστα διπλωματικών.', NULL, 1, NULL, NULL, NULL, NULL, NULL, '2025-09-12 18:51:16', '2025-09-13 17:47:00'),
-('dd2d41eb-8f2a-11f0-8503-d8bbc1070448', NULL, 'f11a1a41-8e6d-11f0-8503-d8bbc1070448', NULL, 'Δοκιμαστικό Θέμα για τον Καθηγητή Α', 'Αυτό είναι ένα test θέμα που ανήκει στον Καθηγητή Α. Άλφα.', NULL, 1, NULL, NULL, NULL, NULL, NULL, '2025-09-11 16:17:49', '2025-09-13 18:17:40'),
+('dd2d41eb-8f2a-11f0-8503-d8bbc1070448', NULL, 'f11a1a41-8e6d-11f0-8503-d8bbc1070448', NULL, 'Δοκιμαστικό Θέμα για τον Καθηγητή Α', 'Αυτό είναι ένα test θέμα που ανήκει στον Καθηγητή Α. Άλφα.', NULL, 1, 'f118d6ee-8e6d-11f0-8503-d8bbc1070448', '2025-09-17 15:50:32', NULL, NULL, NULL, '2025-09-11 16:17:49', '2025-09-17 12:50:32'),
 ('dd6b6d2d-9009-11f0-8503-d8bbc1070448', NULL, 'f11a1a41-8e6d-11f0-8503-d8bbc1070448', NULL, 'Demo Θέμα για έλεγχο UI', 'Δοκιμαστικό θέμα για τη λίστα διπλωματικών.', NULL, 1, NULL, NULL, NULL, NULL, NULL, '2025-09-12 18:54:06', '2025-09-13 17:47:03'),
-('f096323e-9007-11f0-8503-d8bbc1070448', NULL, 'f11a1a41-8e6d-11f0-8503-d8bbc1070448', NULL, 'Παράδειγμα Θέμα', 'Αυτό είναι δοκιμαστικό θέμα.', NULL, 0, 'f118d73b-8e6d-11f0-8503-d8bbc1070448', '2025-09-15 19:22:56', NULL, NULL, NULL, '2025-09-12 18:40:19', '2025-09-15 16:44:06'),
+('f096323e-9007-11f0-8503-d8bbc1070448', NULL, 'f11a1a41-8e6d-11f0-8503-d8bbc1070448', NULL, 'Παράδειγμα Θέμα', 'Αυτό είναι δοκιμαστικό θέμα.', NULL, 1, NULL, NULL, NULL, NULL, NULL, '2025-09-12 18:40:19', '2025-09-17 12:55:47'),
 ('f11aed2f-8e6d-11f0-8503-d8bbc1070448', NULL, 'f11a1a41-8e6d-11f0-8503-d8bbc1070448', NULL, 'Θέμα Α από Καθηγητής Α. Αλφα', 'Περιγραφή θέματος Α', NULL, 1, NULL, NULL, NULL, NULL, '2024-2025', '2025-09-10 17:45:29', '2025-09-10 17:45:29'),
-('f11aeee6-8e6d-11f0-8503-d8bbc1070448', NULL, 'f11a1be2-8e6d-11f0-8503-d8bbc1070448', NULL, 'Θέμα Α από Καθηγήτρια Β. Βήτα', 'Περιγραφή θέματος Α', NULL, 1, NULL, NULL, NULL, NULL, '2024-2025', '2025-09-10 17:45:29', '2025-09-10 17:45:29'),
+('f11aeee6-8e6d-11f0-8503-d8bbc1070448', NULL, 'f11a1be2-8e6d-11f0-8503-d8bbc1070448', NULL, 'Θέμα Α από Καθηγήτρια Β. Βήτα', 'Περιγραφή θέματος Α', NULL, 1, NULL, NULL, NULL, NULL, '2024-2025', '2025-09-10 17:45:29', '2025-09-17 14:31:53'),
 ('f11aef86-8e6d-11f0-8503-d8bbc1070448', NULL, 'f11a1c50-8e6d-11f0-8503-d8bbc1070448', NULL, 'Θέμα Α από Καθηγητής Γ. Γάμμα', 'Περιγραφή θέματος Α', NULL, 1, NULL, NULL, NULL, NULL, '2024-2025', '2025-09-10 17:45:29', '2025-09-10 17:45:29'),
 ('f11aefdb-8e6d-11f0-8503-d8bbc1070448', NULL, 'f11a1ca7-8e6d-11f0-8503-d8bbc1070448', NULL, 'Θέμα Α από Καθηγητής Δ. Δέλτα', 'Περιγραφή θέματος Α', NULL, 0, 'f118d778-8e6d-11f0-8503-d8bbc1070448', '2025-09-15 18:21:47', NULL, NULL, '2024-2025', '2025-09-10 17:45:29', '2025-09-15 15:21:47'),
 ('f11af034-8e6d-11f0-8503-d8bbc1070448', NULL, 'f11a1cfa-8e6d-11f0-8503-d8bbc1070448', NULL, 'Θέμα Α από Καθηγήτρια Ε. Έψιλον', 'Περιγραφή θέματος Α', NULL, 1, NULL, NULL, NULL, NULL, '2024-2025', '2025-09-10 17:45:29', '2025-09-10 17:45:29'),
 ('f11bd9a4-8e6d-11f0-8503-d8bbc1070448', NULL, 'f11a1a41-8e6d-11f0-8503-d8bbc1070448', NULL, 'Θέμα Β από Καθηγητής Α. Αλφα', 'Περιγραφή θέματος Β', NULL, 1, NULL, NULL, NULL, NULL, '2024-2025', '2025-09-10 17:45:29', '2025-09-10 17:45:29'),
-('f11bdb90-8e6d-11f0-8503-d8bbc1070448', NULL, 'f11a1be2-8e6d-11f0-8503-d8bbc1070448', NULL, 'Θέμα Β από Καθηγήτρια Β. Βήτα', 'Περιγραφή θέματος Β', NULL, 1, NULL, NULL, NULL, NULL, '2024-2025', '2025-09-10 17:45:29', '2025-09-10 17:45:29'),
+('f11bdb90-8e6d-11f0-8503-d8bbc1070448', NULL, 'f11a1be2-8e6d-11f0-8503-d8bbc1070448', NULL, 'Θέμα Β από Καθηγήτρια Β. Βήτα', 'Περιγραφή θέματος Β', NULL, 1, NULL, NULL, NULL, NULL, '2024-2025', '2025-09-10 17:45:29', '2025-09-17 14:21:21'),
 ('f11bdbe7-8e6d-11f0-8503-d8bbc1070448', NULL, 'f11a1c50-8e6d-11f0-8503-d8bbc1070448', NULL, 'Θέμα Β από Καθηγητής Γ. Γάμμα', 'Περιγραφή θέματος Β', NULL, 1, NULL, NULL, NULL, NULL, '2024-2025', '2025-09-10 17:45:29', '2025-09-10 17:45:29'),
 ('f11bdc3f-8e6d-11f0-8503-d8bbc1070448', NULL, 'f11a1ca7-8e6d-11f0-8503-d8bbc1070448', NULL, 'Θέμα Β από Καθηγητής Δ. Δέλτα', 'Περιγραφή θέματος Β', NULL, 0, NULL, NULL, NULL, NULL, '2024-2025', '2025-09-10 17:45:29', '2025-09-15 13:26:04'),
 ('f11bdc8d-8e6d-11f0-8503-d8bbc1070448', NULL, 'f11a1cfa-8e6d-11f0-8503-d8bbc1070448', NULL, 'Θέμα Β από Καθηγήτρια Ε. Έψιλον', 'Περιγραφή θέματος Β', NULL, 1, NULL, NULL, NULL, NULL, '2024-2025', '2025-09-10 17:45:29', '2025-09-10 17:45:29');
@@ -751,7 +805,7 @@ INSERT INTO `topics` (`id`, `professor_id`, `supervisor_id`, `assigned_student_i
 -- --------------------------------------------------------
 
 --
--- Δομή πίνακα για τον πίνακα `users`
+-- Table structure for table `users`
 --
 
 CREATE TABLE `users` (
@@ -769,7 +823,7 @@ CREATE TABLE `users` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Άδειασμα δεδομένων του πίνακα `users`
+-- Dumping data for table `users`
 --
 
 INSERT INTO `users` (`id`, `role`, `student_number`, `name`, `email`, `password_hash`, `address`, `phone_mobile`, `phone_landline`, `created_at`, `updated_at`) VALUES
@@ -777,23 +831,23 @@ INSERT INTO `users` (`id`, `role`, `student_number`, `name`, `email`, `password_
 ('f118d4a7-8e6d-11f0-8503-d8bbc1070448', 'student', 's1002', 'Μαρία Κωνσταντίνου', 's1002@uni.gr', '$2y$10$mXWzrUD1mSK9ytKykcuf7Od3SDHUHmjW5CZMfMmQ1lt1uF4jiVzNO', NULL, NULL, NULL, '2025-09-10 17:45:29', '2025-09-15 13:21:21'),
 ('f118d56b-8e6d-11f0-8503-d8bbc1070448', 'student', 's1003', 'Αντώνης Σπυρόπουλος', 's1003@uni.gr', '$2y$10$8QxAP0E28/uQqiAppCbT6uV/ehQ9Dybj44yvXPCJ1o3nwzOPSqmgG', NULL, NULL, NULL, '2025-09-10 17:45:29', '2025-09-15 13:22:44'),
 ('f118d5c4-8e6d-11f0-8503-d8bbc1070448', 'student', 's1004', 'Ελένη Γεωργίου', 's1004@uni.gr', 'x', NULL, NULL, NULL, '2025-09-10 17:45:29', '2025-09-10 17:45:29'),
-('f118d60e-8e6d-11f0-8503-d8bbc1070448', 'student', 's1005', 'Κώστας Δημητρίου', 's1005@uni.gr', 'x', NULL, NULL, NULL, '2025-09-10 17:45:29', '2025-09-10 17:45:29'),
-('f118d656-8e6d-11f0-8503-d8bbc1070448', 'student', 's1006', 'Νίκη Σταθοπούλου', 's1006@uni.gr', 'x', NULL, NULL, NULL, '2025-09-10 17:45:29', '2025-09-10 17:45:29'),
+('f118d60e-8e6d-11f0-8503-d8bbc1070448', 'student', 's1005', 'Κώστας Δημητρίου', 's1005@uni.gr', '$2y$10$tETRb3RgUo6IeXCa4sJ4ieM4oNN.HAec3VqTt4Db6Jb8kKW9u2IOO', NULL, NULL, NULL, '2025-09-10 17:45:29', '2025-09-17 12:51:50'),
+('f118d656-8e6d-11f0-8503-d8bbc1070448', 'student', 's1006', 'Νίκη Σταθοπούλου', 's1006@uni.gr', '$2y$10$fCd8B4DTlAgPWKVhlk3w9O9TYUpm82ShKePnXBLmLp/DcUrtp6UZO', NULL, NULL, NULL, '2025-09-10 17:45:29', '2025-09-17 12:53:49'),
 ('f118d69d-8e6d-11f0-8503-d8bbc1070448', 'student', 's1007', 'Χρήστος Αντωνίου', 's1007@uni.gr', '$2y$10$ooRnG5l/t7n3iOM70NeOSO/rlxo29e6OdJBm9YI06aTByqbUGvmyu', NULL, NULL, NULL, '2025-09-10 17:45:29', '2025-09-15 16:21:40'),
-('f118d6ee-8e6d-11f0-8503-d8bbc1070448', 'student', 's1008', 'Δήμητρα Λάμπρου', 's1008@uni.gr', 'x', NULL, NULL, NULL, '2025-09-10 17:45:29', '2025-09-10 17:45:29'),
+('f118d6ee-8e6d-11f0-8503-d8bbc1070448', 'student', 's1008', 'Δήμητρα Λάμπρου', 's1008@uni.gr', '$2y$10$nPnzTCxMnF/ndGW0KsecnuFeNYPsa2QXBH5WeLXs3Xjb8IufMp.Bi', NULL, NULL, NULL, '2025-09-10 17:45:29', '2025-09-17 12:50:48'),
 ('f118d73b-8e6d-11f0-8503-d8bbc1070448', 'student', 's1009', 'Πέτρος Καραγιάννης', 's1009@uni.gr', '$2y$10$RFGRqKdqjNZAdT4f64p5Y.qGC0VG6heud3t8rxSXoUqVss3n3IL5m', NULL, NULL, NULL, '2025-09-10 17:45:29', '2025-09-15 16:22:35'),
 ('f118d778-8e6d-11f0-8503-d8bbc1070448', 'student', 's1010', 'Άννα Σακελλαρίου', 's1010@uni.gr', '$2y$10$TwCbIozfp7YcoluV2buZ2eYUJm6AxgcFh8Wr85yUsUSP2BeB6p4zu', '', '6972522479', '', '2025-09-10 17:45:29', '2025-09-15 16:17:05'),
 ('f11a1a41-8e6d-11f0-8503-d8bbc1070448', 'teacher', NULL, 'Καθηγητής Α. Αλφα', 'a.alpha@uni.gr', '$2y$10$af2sOWn8UO/74dYCEFaPt.ajTzJHzqwOL4yD2GsksXoECk4iH5VLe', NULL, NULL, NULL, '2025-09-10 17:45:29', '2025-09-10 18:34:00'),
 ('f11a1be2-8e6d-11f0-8503-d8bbc1070448', 'teacher', NULL, 'Καθηγήτρια Β. Βήτα', 'b.beta@uni.gr', '$2y$10$f1YJ7co39kfD0gsaF7A97ezelw6goGo1MiWU0g3rM8FU6WsFGVwvC', NULL, NULL, NULL, '2025-09-10 17:45:29', '2025-09-14 18:57:02'),
 ('f11a1c50-8e6d-11f0-8503-d8bbc1070448', 'teacher', NULL, 'Καθηγητής Γ. Γάμμα', 'g.gamma@uni.gr', '$2y$10$HxmdIRxYGPj4lqvOzCwhCerfmJVAiUyewxa5i.J2UbFUlbx1eYvCe', NULL, NULL, NULL, '2025-09-10 17:45:29', '2025-09-14 19:44:47'),
 ('f11a1ca7-8e6d-11f0-8503-d8bbc1070448', 'teacher', NULL, 'Καθηγητής Δ. Δέλτα', 'd.delta@uni.gr', '$2y$10$.clNCfwbe15mTxvdu6BdLOg/W0VY3h6QzBHUz0ZCpGHAdN8sIUzIa', NULL, NULL, NULL, '2025-09-10 17:45:29', '2025-09-14 20:04:24'),
-('f11a1cfa-8e6d-11f0-8503-d8bbc1070448', 'teacher', NULL, 'Καθηγήτρια Ε. Έψιλον', 'e.epsilon@uni.gr', 'x', NULL, NULL, NULL, '2025-09-10 17:45:29', '2025-09-10 17:45:29');
+('f11a1cfa-8e6d-11f0-8503-d8bbc1070448', 'teacher', NULL, 'Καθηγήτρια Ε. Έψιλον', 'e.epsilon@uni.gr', '$2y$10$F08oA9Bk3xwmhtpKULyVHOy5sEufmEI9fyRY08oVr1cV0PYr5kqbe', NULL, NULL, NULL, '2025-09-10 17:45:29', '2025-09-17 12:52:31');
 
 -- --------------------------------------------------------
 
 --
--- Στημένη δομή για προβολή `vw_public_presentations`
--- (Δείτε παρακάτω για την πραγματική προβολή)
+-- Stand-in structure for view `vw_public_presentations`
+-- (See below for the actual view)
 --
 CREATE TABLE `vw_public_presentations` (
 `when_dt` datetime
@@ -809,8 +863,8 @@ CREATE TABLE `vw_public_presentations` (
 -- --------------------------------------------------------
 
 --
--- Στημένη δομή για προβολή `vw_teacher_stats`
--- (Δείτε παρακάτω για την πραγματική προβολή)
+-- Stand-in structure for view `vw_teacher_stats`
+-- (See below for the actual view)
 --
 CREATE TABLE `vw_teacher_stats` (
 `teacher_id` char(36)
@@ -823,7 +877,7 @@ CREATE TABLE `vw_teacher_stats` (
 -- --------------------------------------------------------
 
 --
--- Δομή για προβολή `vw_public_presentations`
+-- Structure for view `vw_public_presentations`
 --
 DROP TABLE IF EXISTS `vw_public_presentations`;
 
@@ -832,18 +886,18 @@ CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW 
 -- --------------------------------------------------------
 
 --
--- Δομή για προβολή `vw_teacher_stats`
+-- Structure for view `vw_teacher_stats`
 --
 DROP TABLE IF EXISTS `vw_teacher_stats`;
 
-CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `vw_teacher_stats`  AS WITH involvement AS (SELECT `t`.`supervisor_id` AS `teacher_id`, `t`.`id` AS `thesis_id`, 'supervisor' AS `role` FROM `theses` AS `t` WHERE `t`.`status` = 'completed' UNION ALL SELECT `pr`.`user_id` AS `teacher_id`, `cm`.`thesis_id` AS `thesis_id`, 'member' AS `role` FROM ((`committee_members` `cm` join `persons` `pr` on(`pr`.`id` = `cm`.`person_id`)) join `theses` `t` on(`t`.`id` = `cm`.`thesis_id`)) WHERE `t`.`status` = 'completed' AND `cm`.`role_in_committee` = 'member'), involvement_distinct AS (SELECT DISTINCT `involvement`.`teacher_id` AS `teacher_id`, `involvement`.`thesis_id` AS `thesis_id` FROM `involvement`), thesis_avg AS (SELECT `t`.`id` AS `thesis_id`, avg(`g`.`total`) AS `thesis_avg` FROM (`theses` `t` join `grades` `g` on(`g`.`thesis_id` = `t`.`id`)) WHERE `t`.`status` = 'completed' GROUP BY `t`.`id`), counts AS (SELECT `i`.`teacher_id` AS `teacher_id`, sum(`i`.`role` = 'supervisor') AS `count_supervised`, sum(`i`.`role` = 'member') AS `count_as_member` FROM `involvement` AS `i` GROUP BY `i`.`teacher_id`), avg_by_teacher AS (SELECT `id`.`teacher_id` AS `teacher_id`, avg(`ta`.`thesis_avg`) AS `avg_grade_related` FROM (`involvement_distinct` `id` join `thesis_avg` `ta` on(`ta`.`thesis_id` = `id`.`thesis_id`)) GROUP BY `id`.`teacher_id`) SELECT `te`.`id` AS `teacher_id`, `te`.`name` AS `teacher_name`, coalesce(`c`.`count_supervised`,0) AS `count_supervised`, coalesce(`c`.`count_as_member`,0) AS `count_as_member`, `abt`.`avg_grade_related` AS `avg_grade_related` FROM ((`users` `te` left join `counts` `c` on(`c`.`teacher_id` = `te`.`id`)) left join `avg_by_teacher` `abt` on(`abt`.`teacher_id` = `te`.`id`)) WHERE `te`.`role` = 'teacher\'teacher''teacher\'teacher'  ;
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `vw_teacher_stats`  AS WITH involvement AS (SELECT `t`.`supervisor_id` AS `teacher_id`, `t`.`id` AS `thesis_id`, 'supervisor' AS `role` FROM `theses` AS `t` WHERE `t`.`status` = 'completed' UNION ALL SELECT `pr`.`user_id` AS `teacher_id`, `cm`.`thesis_id` AS `thesis_id`, 'member' AS `role` FROM ((`committee_members` `cm` join `persons` `pr` on(`pr`.`id` = `cm`.`person_id`)) join `theses` `t` on(`t`.`id` = `cm`.`thesis_id`)) WHERE `t`.`status` = 'completed' AND `cm`.`role_in_committee` = 'member'), involvement_distinct AS (SELECT DISTINCT `involvement`.`teacher_id` AS `teacher_id`, `involvement`.`thesis_id` AS `thesis_id` FROM `involvement`), thesis_avg AS (SELECT `t`.`id` AS `thesis_id`, avg(`g`.`total`) AS `thesis_avg` FROM (`theses` `t` join `grades` `g` on(`g`.`thesis_id` = `t`.`id`)) WHERE `t`.`status` = 'completed' GROUP BY `t`.`id`), counts AS (SELECT `i`.`teacher_id` AS `teacher_id`, sum(`i`.`role` = 'supervisor') AS `count_supervised`, sum(`i`.`role` = 'member') AS `count_as_member` FROM `involvement` AS `i` GROUP BY `i`.`teacher_id`), avg_by_teacher AS (SELECT `id`.`teacher_id` AS `teacher_id`, avg(`ta`.`thesis_avg`) AS `avg_grade_related` FROM (`involvement_distinct` `id` join `thesis_avg` `ta` on(`ta`.`thesis_id` = `id`.`thesis_id`)) GROUP BY `id`.`teacher_id`) SELECT `te`.`id` AS `teacher_id`, `te`.`name` AS `teacher_name`, coalesce(`c`.`count_supervised`,0) AS `count_supervised`, coalesce(`c`.`count_as_member`,0) AS `count_as_member`, `abt`.`avg_grade_related` AS `avg_grade_related` FROM ((`users` `te` left join `counts` `c` on(`c`.`teacher_id` = `te`.`id`)) left join `avg_by_teacher` `abt` on(`abt`.`teacher_id` = `te`.`id`)) WHERE `te`.`role` = 'teacher\'teacher\'teacher\'teacher''teacher\'teacher\'teacher\'teacher'  ;
 
 --
--- Ευρετήρια για άχρηστους πίνακες
+-- Indexes for dumped tables
 --
 
 --
--- Ευρετήρια για πίνακα `committee_invitations`
+-- Indexes for table `committee_invitations`
 --
 ALTER TABLE `committee_invitations`
   ADD PRIMARY KEY (`id`),
@@ -852,7 +906,7 @@ ALTER TABLE `committee_invitations`
   ADD KEY `idx_invitations_thesis_status` (`thesis_id`,`status`);
 
 --
--- Ευρετήρια για πίνακα `committee_members`
+-- Indexes for table `committee_members`
 --
 ALTER TABLE `committee_members`
   ADD PRIMARY KEY (`id`),
@@ -861,7 +915,7 @@ ALTER TABLE `committee_members`
   ADD KEY `idx_cm_person` (`person_id`,`thesis_id`);
 
 --
--- Ευρετήρια για πίνακα `events_log`
+-- Indexes for table `events_log`
 --
 ALTER TABLE `events_log`
   ADD PRIMARY KEY (`id`),
@@ -869,13 +923,13 @@ ALTER TABLE `events_log`
   ADD KEY `idx_events_thesis_created` (`thesis_id`,`created_at`);
 
 --
--- Ευρετήρια για πίνακα `exam_minutes`
+-- Indexes for table `exam_minutes`
 --
 ALTER TABLE `exam_minutes`
   ADD PRIMARY KEY (`thesis_id`);
 
 --
--- Ευρετήρια για πίνακα `grades`
+-- Indexes for table `grades`
 --
 ALTER TABLE `grades`
   ADD PRIMARY KEY (`id`),
@@ -885,14 +939,14 @@ ALTER TABLE `grades`
   ADD KEY `idx_grades_thesis` (`thesis_id`);
 
 --
--- Ευρετήρια για πίνακα `grading_rubrics`
+-- Indexes for table `grading_rubrics`
 --
 ALTER TABLE `grading_rubrics`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `code` (`code`);
 
 --
--- Ευρετήρια για πίνακα `notes`
+-- Indexes for table `notes`
 --
 ALTER TABLE `notes`
   ADD PRIMARY KEY (`id`),
@@ -900,7 +954,7 @@ ALTER TABLE `notes`
   ADD KEY `fk_notes_author` (`author_id`);
 
 --
--- Ευρετήρια για πίνακα `persons`
+-- Indexes for table `persons`
 --
 ALTER TABLE `persons`
   ADD PRIMARY KEY (`id`),
@@ -908,13 +962,13 @@ ALTER TABLE `persons`
   ADD UNIQUE KEY `uq_person_user` (`user_id`);
 
 --
--- Ευρετήρια για πίνακα `policies`
+-- Indexes for table `policies`
 --
 ALTER TABLE `policies`
   ADD PRIMARY KEY (`key_name`);
 
 --
--- Ευρετήρια για πίνακα `presentation`
+-- Indexes for table `presentation`
 --
 ALTER TABLE `presentation`
   ADD PRIMARY KEY (`id`),
@@ -922,27 +976,27 @@ ALTER TABLE `presentation`
   ADD KEY `idx_presentation_when` (`when_dt`);
 
 --
--- Ευρετήρια για πίνακα `presentations`
+-- Indexes for table `presentations`
 --
 ALTER TABLE `presentations`
   ADD PRIMARY KEY (`thesis_id`);
 
 --
--- Ευρετήρια για πίνακα `resources`
+-- Indexes for table `resources`
 --
 ALTER TABLE `resources`
   ADD PRIMARY KEY (`id`),
   ADD KEY `fk_resources_thesis` (`thesis_id`);
 
 --
--- Ευρετήρια για πίνακα `student_eligibility_snapshot`
+-- Indexes for table `student_eligibility_snapshot`
 --
 ALTER TABLE `student_eligibility_snapshot`
   ADD PRIMARY KEY (`thesis_id`),
   ADD KEY `fk_elig_student` (`student_id`);
 
 --
--- Ευρετήρια για πίνακα `theses`
+-- Indexes for table `theses`
 --
 ALTER TABLE `theses`
   ADD PRIMARY KEY (`id`),
@@ -952,28 +1006,28 @@ ALTER TABLE `theses`
   ADD KEY `idx_theses_status_supervisor` (`status`,`supervisor_id`);
 
 --
--- Ευρετήρια για πίνακα `thesis_notes`
+-- Indexes for table `thesis_notes`
 --
 ALTER TABLE `thesis_notes`
   ADD PRIMARY KEY (`id`),
   ADD KEY `idx_notes_thesis` (`thesis_id`,`author_id`,`created_at`);
 
 --
--- Ευρετήρια για πίνακα `thesis_resources`
+-- Indexes for table `thesis_resources`
 --
 ALTER TABLE `thesis_resources`
   ADD PRIMARY KEY (`id`),
   ADD KEY `idx_res_thesis_type` (`thesis_id`,`type`,`uploaded_at`);
 
 --
--- Ευρετήρια για πίνακα `thesis_timeline`
+-- Indexes for table `thesis_timeline`
 --
 ALTER TABLE `thesis_timeline`
   ADD PRIMARY KEY (`id`),
   ADD KEY `idx_timeline_thesis_created` (`thesis_id`,`created_at`);
 
 --
--- Ευρετήρια για πίνακα `topics`
+-- Indexes for table `topics`
 --
 ALTER TABLE `topics`
   ADD PRIMARY KEY (`id`),
@@ -983,7 +1037,7 @@ ALTER TABLE `topics`
   ADD KEY `fk_topics_student` (`assigned_student_id`);
 
 --
--- Ευρετήρια για πίνακα `users`
+-- Indexes for table `users`
 --
 ALTER TABLE `users`
   ADD PRIMARY KEY (`id`),
@@ -991,38 +1045,38 @@ ALTER TABLE `users`
   ADD UNIQUE KEY `uq_student_number_role` (`student_number`,`role`);
 
 --
--- Περιορισμοί για άχρηστους πίνακες
+-- Constraints for dumped tables
 --
 
 --
--- Περιορισμοί για πίνακα `committee_invitations`
+-- Constraints for table `committee_invitations`
 --
 ALTER TABLE `committee_invitations`
   ADD CONSTRAINT `fk_inv_person` FOREIGN KEY (`person_id`) REFERENCES `persons` (`id`),
   ADD CONSTRAINT `fk_inv_thesis` FOREIGN KEY (`thesis_id`) REFERENCES `theses` (`id`) ON DELETE CASCADE;
 
 --
--- Περιορισμοί για πίνακα `committee_members`
+-- Constraints for table `committee_members`
 --
 ALTER TABLE `committee_members`
   ADD CONSTRAINT `fk_mem_person` FOREIGN KEY (`person_id`) REFERENCES `persons` (`id`),
   ADD CONSTRAINT `fk_mem_thesis` FOREIGN KEY (`thesis_id`) REFERENCES `theses` (`id`) ON DELETE CASCADE;
 
 --
--- Περιορισμοί για πίνακα `events_log`
+-- Constraints for table `events_log`
 --
 ALTER TABLE `events_log`
   ADD CONSTRAINT `fk_ev_actor` FOREIGN KEY (`actor_id`) REFERENCES `users` (`id`),
   ADD CONSTRAINT `fk_ev_thesis` FOREIGN KEY (`thesis_id`) REFERENCES `theses` (`id`) ON DELETE CASCADE;
 
 --
--- Περιορισμοί για πίνακα `exam_minutes`
+-- Constraints for table `exam_minutes`
 --
 ALTER TABLE `exam_minutes`
   ADD CONSTRAINT `fk_minutes_thesis` FOREIGN KEY (`thesis_id`) REFERENCES `theses` (`id`) ON DELETE CASCADE;
 
 --
--- Περιορισμοί για πίνακα `grades`
+-- Constraints for table `grades`
 --
 ALTER TABLE `grades`
   ADD CONSTRAINT `fk_grades_person` FOREIGN KEY (`person_id`) REFERENCES `persons` (`id`),
@@ -1030,45 +1084,45 @@ ALTER TABLE `grades`
   ADD CONSTRAINT `fk_grades_thesis` FOREIGN KEY (`thesis_id`) REFERENCES `theses` (`id`) ON DELETE CASCADE;
 
 --
--- Περιορισμοί για πίνακα `notes`
+-- Constraints for table `notes`
 --
 ALTER TABLE `notes`
   ADD CONSTRAINT `fk_notes_author` FOREIGN KEY (`author_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `fk_notes_thesis` FOREIGN KEY (`thesis_id`) REFERENCES `theses` (`id`) ON DELETE CASCADE;
 
 --
--- Περιορισμοί για πίνακα `persons`
+-- Constraints for table `persons`
 --
 ALTER TABLE `persons`
   ADD CONSTRAINT `fk_person_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`);
 
 --
--- Περιορισμοί για πίνακα `presentation`
+-- Constraints for table `presentation`
 --
 ALTER TABLE `presentation`
   ADD CONSTRAINT `fk_presentation_thesis` FOREIGN KEY (`thesis_id`) REFERENCES `theses` (`id`) ON DELETE CASCADE;
 
 --
--- Περιορισμοί για πίνακα `presentations`
+-- Constraints for table `presentations`
 --
 ALTER TABLE `presentations`
   ADD CONSTRAINT `fk_pres_thesis` FOREIGN KEY (`thesis_id`) REFERENCES `theses` (`id`) ON DELETE CASCADE;
 
 --
--- Περιορισμοί για πίνακα `resources`
+-- Constraints for table `resources`
 --
 ALTER TABLE `resources`
   ADD CONSTRAINT `fk_resources_thesis` FOREIGN KEY (`thesis_id`) REFERENCES `theses` (`id`) ON DELETE CASCADE;
 
 --
--- Περιορισμοί για πίνακα `student_eligibility_snapshot`
+-- Constraints for table `student_eligibility_snapshot`
 --
 ALTER TABLE `student_eligibility_snapshot`
   ADD CONSTRAINT `fk_elig_student` FOREIGN KEY (`student_id`) REFERENCES `users` (`id`),
   ADD CONSTRAINT `fk_elig_thesis` FOREIGN KEY (`thesis_id`) REFERENCES `theses` (`id`);
 
 --
--- Περιορισμοί για πίνακα `theses`
+-- Constraints for table `theses`
 --
 ALTER TABLE `theses`
   ADD CONSTRAINT `fk_theses_student` FOREIGN KEY (`student_id`) REFERENCES `users` (`id`),
@@ -1076,13 +1130,13 @@ ALTER TABLE `theses`
   ADD CONSTRAINT `fk_theses_topic` FOREIGN KEY (`topic_id`) REFERENCES `topics` (`id`);
 
 --
--- Περιορισμοί για πίνακα `thesis_timeline`
+-- Constraints for table `thesis_timeline`
 --
 ALTER TABLE `thesis_timeline`
   ADD CONSTRAINT `fk_timeline_thesis` FOREIGN KEY (`thesis_id`) REFERENCES `theses` (`id`) ON DELETE CASCADE;
 
 --
--- Περιορισμοί για πίνακα `topics`
+-- Constraints for table `topics`
 --
 ALTER TABLE `topics`
   ADD CONSTRAINT `fk_topics_provisional_student` FOREIGN KEY (`provisional_student_id`) REFERENCES `users` (`id`),
