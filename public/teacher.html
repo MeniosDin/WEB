@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="el">
+  <head>
+    <meta charset="utf-8" />
+    <title>Διδάσκων</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="css/styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <h2>Πίνακας Διδάσκοντα</h2>
+      <button id="logoutBtn" class="btn">Αποσύνδεση</button>
+    </header>
+
+    <main class="container">
+      <!-- Θέματα -->
+      <section class="card" style="padding:1rem">
+        <h3>Τα θέματα μου</h3>
+        <div id="topics"></div>
+      </section>
+
+      <!-- Διπλωματικές -->
+      <section class="card" style="padding:1rem; margin-top:1rem">
+        <h3>Οι διπλωματικές μου</h3>
+
+        <div style="display:flex; gap:.5rem; align-items:center; flex-wrap:wrap; margin:.5rem 0">
+          <select id="thesisRole" class="input">
+            <option value="">Ρόλος: Όλοι</option>
+            <option value="supervisor">Ως επιβλέπων</option>
+            <option value="committee">Ως μέλος τριμελούς</option>
+          </select>
+
+          <select id="thesisStatus" class="input">
+            <option value="">Κατάσταση: Όλες</option>
+            <option value="under_assignment">Υπό ανάθεση</option>
+            <option value="active">Ενεργή</option>
+            <option value="under_review">Υπό εξέταση</option>
+            <option value="completed">Περατωμένη</option>
+            <option value="canceled">Ακυρωμένη</option>
+          </select>
+
+          <button id="btnThesisReload" class="btn">Ανανέωση</button>
+          <div style="margin-left:auto; display:flex; gap:.5rem">
+            <button id="exportCsv" class="btn btn-sm">Export CSV</button>
+            <button id="exportJson" class="btn btn-sm">Export JSON</button>
+          </div>
+        </div>
+
+        <div id="thesesList"></div>
+      </section>
+
+      <!-- Προσκλήσεις -->
+      <section style="margin-top:2rem">
+        <h3>Προσκλήσεις για τριμελείς</h3>
+        <div id="invitationsList" class="stack"></div>
+      </section>
+
+      <!-- Προσθήκη νέου θέματος -->
+      <section class="card" style="padding:1rem; margin-top:1rem">
+        <h3>Προσθήκη νέου θέματος</h3>
+        <form id="newTopicForm" enctype="multipart/form-data">
+          <input type="text" id="title" placeholder="Τίτλος" required />
+          <textarea id="summary" placeholder="Περιγραφή"></textarea>
+          <input type="file" id="spec_pdf" name="spec_pdf" accept="application/pdf" />
+          <button type="submit" class="btn">Προσθήκη</button>
+        </form>
+      </section>
+
+      <!-- Στατιστικά -->
+      <section class="card" style="padding:1rem;margin-top:1rem">
+        <h3>Στατιστικά</h3>
+        <div style="height:280px">
+          <canvas id="teacherStats"></canvas>
+        </div>
+      </section>
+    </main>
+
+    <!-- Chart.js UMD (global window.Chart) ΠΡΙΝ από τα modules -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+
+    <!-- ES modules σου -->
+    <script type="module">
+      import { guardRole } from './js/auth.js';
+      import { loadTeacherTopics } from './js/teacher.js';
+      import { drawTeacherStats } from './js/charts.js';
+
+      await guardRole('teacher');
+      await loadTeacherTopics();
+      await drawTeacherStats();
+
+      const logoutBtn = document.getElementById('logoutBtn');
+      if (logoutBtn) {
+        logoutBtn.addEventListener('click', async () => {
+          await fetch('/thesis-web/api/auth/logout.php');
+          window.location.href = '/thesis-web/public/login.html';
+        });
+      }
+    </script>
+  </body>
+</html>

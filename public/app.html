@@ -1,0 +1,20 @@
+<!doctype html><html lang="el"><meta charset="utf-8">
+<title>App</title>
+<link rel="stylesheet" href="css/styles.css">
+<body>
+<header class="topbar">
+<nav>
+<a href="teacher.html">Διδάσκων</a>
+<a href="student.html">Φοιτητής/τρια</a>
+<a href="secretariat.html">Γραμματεία</a>
+<button id="logout">Αποσύνδεση</button>
+</nav>
+</header>
+<main id="view" class="container"></main>
+<script type="module">
+import { guardRole, logout } from './js/auth.js';
+document.getElementById('logout').onclick = ()=> logout();
+await guardRole();
+document.getElementById('view').textContent = 'Καλωσήρθες!';
+</script>
+</body></html>
