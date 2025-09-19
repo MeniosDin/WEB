@@ -27,6 +27,39 @@ async function safeJson(res) {
   }
 }
 
+// ----- API helpers -----
+async function apiGet(url) {
+  const r = await fetch(`/thesis-web/api${url}`, { credentials: 'same-origin', headers: { 'Accept':'application/json' } });
+  return r.json();
+}
+async function apiPost(url, data) {
+  const body = (data instanceof FormData) ? data : Object.entries(data).map(([k,v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`).join('&');
+  const r = await fetch(`/thesis-web/api${url}`, {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: data instanceof FormData ? {} : { 'Content-Type':'application/x-www-form-urlencoded; charset=UTF-8' },
+    body
+  });
+  return r.json();
+}
+
+// Πάρε τον τρέχοντα χρήστη (χρειαζόμαστε person_id για τον έλεγχο επιβλέποντα)
+async function getMe() {
+  const r = await apiGet('/auth/me.php'); // αν έχεις άλλο endpoint προσαρμόσ’ το
+  // αναμένουμε { ok:true, user:{ id, person_id, name, ... } }
+  return r?.user || r?.data?.user || {};
+}
+
+// Φέρε *τον δικό μου* βαθμό (για prefill)
+async function fetchMyGrade(thesis_id) {
+  const u = new URL('/thesis-web/api/grades/record.php', location.origin);
+  u.searchParams.set('thesis_id', thesis_id);
+  const r = await fetch(u, { credentials: 'same-origin', headers: { 'Accept':'application/json' } });
+  const j = await r.json();
+  // αναμένουμε { ok:true, grade:{ total, notes } } ή κάτι παρόμοιο
+  return j?.grade || j?.data?.grade || null;
+}
+
 // === Βοηθητικά POST + Resources ===
 async function postForm(url, dataObj) {
   const fd = new FormData();
@@ -430,7 +463,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    // Προσωρινή ανάθεση (με αναζήτηση) — ΔΕΝ αλλάζουμε τη διαθεσιμότητα
+    // Προσωρινή ανάθεση (με αναζήτηση)
     if (e.target.classList.contains('assignStudent')) {
       const q = prompt('Δώσε ΑΜ ή όνομα φοιτητή:');
       if (!q) return;
@@ -449,12 +482,12 @@ document.addEventListener('DOMContentLoaded', () => {
       await setAvailability(id, '1');
       const chk = art.querySelector('.toggleAvail'); if (chk) chk.checked = true;
 
-      // 3) refresh για να εμφανιστούν κουμπιά αφαίρεσης/οριστικής
+      // 3) refresh
       await loadTeacherTopics();
       return;
     }
 
-    // Αφαίρεση προσωρινής ανάθεσης — επαναφέρει τη διαθεσιμότητα
+    // Αφαίρεση προσωρινής ανάθεσης
     if (e.target.classList.contains('unassignStudent')) {
       if (!confirm('Να αφαιρεθεί η προσωρινή ανάθεση;')) return;
 
@@ -467,11 +500,11 @@ document.addEventListener('DOMContentLoaded', () => {
       const j = await safeJson(res);
       if (!j || j.ok !== true) { alert((j && j.error) || 'Αποτυχία αφαίρεσης'); return; }
 
-      // 2) διαθέσιμο = 1 (server + UI)
+      // 2) διαθέσιμο = 1
       await setAvailability(id, '1');
       const chk = art.querySelector('.toggleAvail'); if (chk) chk.checked = true;
 
-      // 3) ανανέωση θεμάτων & διπλωματικών
+      // 3) ανανέωση
       await Promise.allSettled([ loadTeacherTopics(), loadThesesList?.() ]);
       return;
     }
@@ -487,7 +520,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
       btn.disabled = true;
       try {
-        // 1) server call για οριστική ανάθεση
         const fd = new FormData();
         fd.append('topic_id', topicId);
         fd.append('student_user_id', studentUserId);
@@ -500,13 +532,11 @@ document.addEventListener('DOMContentLoaded', () => {
           return;
         }
 
-        // 2) UI: άλλαξε label σε "Οριστική ανάθεση:", κρύψε και τα δύο κουμπιά
         const block = btn.closest('div');
         const label = block?.querySelector('b');
         if (label) label.textContent = 'Οριστική ανάθεση:';
         block?.querySelectorAll('.finalAssign, .unassignStudent')?.forEach(el => el.remove());
 
-        // 3) Διαθέσιμο = 0 (server + UI)
         await setAvailability(topicId, '0');
         const chk = art.querySelector('.toggleAvail'); if (chk) chk.checked = false;
 
@@ -520,7 +550,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Toggle "Διαθέσιμο" (χειροκίνητη αλλαγή από checkbox)
+  // Toggle "Διαθέσιμο"
   box.addEventListener('change', async (e) => {
     if (!e.target.classList.contains('toggleAvail')) return;
     const art = e.target.closest('article[data-id]');
@@ -542,6 +572,23 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 })();
 
+// ---------- Presentation helpers ----------
+function fmtDatetime(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso.replace(' ', 'T'));
+  if (isNaN(d)) return iso;
+  const pad = (n) => String(n).padStart(2,'0');
+  return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function presentModeLabel(mode) {
+  const m = String(mode || '').toLowerCase();
+  if (m.includes('online')) return 'Εξ αποστάσεως';
+  if (m.includes('hybrid')) return 'Υβριδική';
+  if (m.includes('person') || m.includes('ζώης') || m.includes('ζώσης')) return 'Δια ζώσης';
+  return mode || '—';
+}
+
 /* =========================
    ΛΕΠΤΟΜΕΡΕΙΕΣ διπλωματικής + νέες ενέργειες
    ========================= */
@@ -552,6 +599,74 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   const list = document.getElementById('thesesList');
   if (!list) return;
+
+  // helper για να στήσεις πάνελ βαθμού
+  function mountGradePanel(det, gradesBox, tid, supervisorLabel) {
+    gradesBox.classList.remove('muted');
+    gradesBox.innerHTML = `
+      <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
+        <button class="btn btn-sm outline openGradeForm" data-thesis="${esc(tid)}">Καταχώριση βαθμού${supervisorLabel ? ' (Επιβλέπων)' : ''}</button>
+        <span class="muted hint">Ο καθένας βλέπει/ενημερώνει τον δικό του βαθμό.</span>
+      </div>
+      <div class="gradeForm" style="display:none;margin-top:.6rem;padding:.6rem;border:1px dashed #374151;border-radius:.6rem">
+        <form class="gradeUpsertF" data-thesis="${esc(tid)}" style="display:grid;gap:.5rem;max-width:420px">
+          <label>Συνολικός βαθμός (0–10)
+            <input type="number" name="total" min="0" max="10" step="0.5" required />
+          </label>
+          <label>Σημειώσεις (προαιρετικό)
+            <textarea name="notes" rows="3" maxlength="500"></textarea>
+          </label>
+          <div style="display:flex;gap:.5rem;align-items:center">
+            <button class="btn btn-sm">Αποθήκευση</button>
+            <button type="button" class="btn btn-sm secondary cancelGrade">Άκυρο</button>
+            <small class="muted saveMsg"></small>
+          </div>
+        </form>
+
+      </div>
+    `;
+
+    // bind submit
+// μέσα στο bindThesisDetails(), εκεί που έχεις:
+// Submit βαθμού (create/update)
+const gradeForm = det.querySelector('.gradeUpsertF');
+if (gradeForm) {
+  gradeForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const saveMsg = gradeForm.querySelector('.saveMsg');
+    if (saveMsg) saveMsg.textContent = 'Αποθήκευση...';
+
+    // 1) Πάρε τα στοιχεία της φόρμας
+    const data = Object.fromEntries(new FormData(gradeForm).entries());
+
+    // 2) Στείλε πάντα το thesis_id από το data attribute της φόρμας
+    data.thesis_id = gradeForm.dataset.thesis;
+
+    // (προαιρετικά) κόψε τυχόν κενά
+    if (typeof data.total === 'string') data.total = data.total.trim();
+
+    // 3) Μικρός έλεγχος στο client
+    if (!data.thesis_id || data.total === '' || data.total == null) {
+      if (saveMsg) saveMsg.textContent = '';
+      alert('Λείπει thesis_id ή total από τη φόρμα.');
+      return;
+    }
+
+    try {
+      await postForm(`${BASE}/api/grades/upsert.php`, data);
+      if (saveMsg) saveMsg.textContent = 'Αποθηκεύτηκε ✔';
+    } catch (err) {
+      if (saveMsg) saveMsg.textContent = '';
+      alert(err.message || 'Σφάλμα.');
+    }
+  });
+}
+
+
+
+
+  }
 
   list.addEventListener('click', async (e) => {
     const btn = e.target.closest('button.seeDetails');
@@ -592,24 +707,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // -------- helpers για κουμπιά --------
       const status = String(thesis.status || '').trim().toLowerCase();
-
-      // προσπάθησε να συμπεράνεις "είμαι επιβλέπων" από διάφορες πηγές UI/JSON
       const myRole = String(thesis.my_role || '').trim().toLowerCase();
       const headerRoleText = art.querySelector('span.muted')?.textContent?.toLowerCase() || '';
       const looksSupervisorFromHeader = /επιβλέπ/.test(headerRoleText);
 
-      const isSupervisor =
-        myRole === 'supervisor' ||
-        looksSupervisorFromHeader;  // αν το details δεν έστειλε my_role, βασίσου στο header
+      const me = await getMe();
+      const isSupervisorByIds = (me?.person_id && thesis?.supervisor_id && me.person_id === thesis.supervisor_id);
+      const isSupervisor = myRole === 'supervisor' || looksSupervisorFromHeader || isSupervisorByIds;
 
-      // Ενεργές εμφανίσεις
+      const gradingEnabled = !!thesis.grading_enabled_at;
+
       const canSetUnderReview     = (status === 'active');
       const showCancelUnderAssign = isSupervisor && (status === 'under_assignment');
-
-      // Δείξε το κουμπί ακύρωσης και για ACTIVE. Ο server θα ελέγξει επιβλέποντα + 2ετία.
       const showCancelGeneral     = (status === 'active');
 
-      // ids
       const statusId   = `statusLabel-${tid}`;
       const resDraftId = `resDrafts-${tid}`;
       const resLinksId = `resLinks-${tid}`;
@@ -628,11 +739,15 @@ document.addEventListener('DOMContentLoaded', () => {
           ${showCancelGeneral
             ? `<button class="btn btn-sm danger cancelAssignment" data-thesis="${esc(tid)}">Ακύρωση ανάθεσης</button>`
             : ``}
-          <button class="btn btn-sm enableGrading" data-thesis="${esc(tid)}">Ενεργοποίηση βαθμολόγησης</button>
+          ${ (status === 'under_review' && !gradingEnabled && isSupervisor)
+              ? `<button class="btn btn-sm enableGrading" data-thesis="${esc(tid)}">Ενεργοποίηση βαθμολόγησης</button>`
+              : `` }
           <button class="btn btn-sm outline genAnnouncement" data-thesis="${esc(tid)}">Παραγωγή ανακοίνωσης</button>
           <button class="btn btn-sm secondary refreshResources" data-thesis="${esc(tid)}">Ανανέωση πόρων</button>
         </div>
       `;
+
+      const presBoxId = `presBox-${tid}`;
 
       det.innerHTML = `
         <div class="card" style="padding:.75rem">
@@ -662,6 +777,12 @@ document.addEventListener('DOMContentLoaded', () => {
             </section>
           </div>
 
+          <!-- Presentation -->
+          <section class="card" style="padding:.75rem;margin-top:1rem">
+            <h4 style="margin:.2rem 0">Παρουσίαση</h4>
+            <div id="${presBoxId}" class="muted">Φόρτωση...</div>
+          </section>
+
           <!-- Notes -->
           <section class="card" style="padding:.75rem;margin-top:1rem">
             <h4 style="margin:.2rem 0">Σημειώσεις (ιδιωτικές)</h4>
@@ -675,91 +796,212 @@ document.addEventListener('DOMContentLoaded', () => {
             <div id="${notesBoxId}" style="margin-top:.5rem">—</div>
           </section>
 
-          <!-- Grades summary -->
-          <section class="card" style="padding:.75rem;margin-top:1rem">
-            <h4 style="margin:.2rem 0">Βαθμολογία</h4>
-            <div id="${gradesBoxId}" class="muted">Χρησιμοποίησε «Ενεργοποίηση βαθμολόγησης» για να ξεκινήσει η διαδικασία.</div>
-          </section>
-        </div>
+          <!-- Grades -->
+            <section class="card" style="padding:.75rem;margin-top:1rem">
+    <h4 style="margin:.2rem 0">Βαθμολογία</h4>
+    <div id="${gradesBoxId}" class="muted">
+      <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
+        <button class="btn btn-sm outline openGradeForm" data-thesis="${esc(tid)}">Καταχώριση βαθμού</button>
+        <span class="muted hint">Ο καθένας βλέπει/ενημερώνει τον δικό του βαθμό.</span>
+      </div>
+
+      <div class="gradeForm" style="display:none;margin-top:.6rem;padding:.6rem;border:1px dashed #374151;border-radius:.6rem">
+        <form class="gradeUpsertF" style="display:grid;gap:.5rem;max-width:420px">
+          <!-- Δέσε το thesis_id σαν hidden input -->
+          <input type="hidden" name="thesis_id" value="${esc(tid)}" />
+
+          <label>Συνολικός βαθμός (0–10)
+            <input type="number" name="total" min="0" max="10" step="0.5" required />
+          </label>
+
+          <label>Σημειώσεις (προαιρετικό)
+            <textarea name="notes" rows="3" maxlength="500" placeholder="π.χ. παρατηρήσεις προς το πρακτικό"></textarea>
+          </label>
+
+          <div style="display:flex;gap:.5rem;align-items:center">
+            <button class="btn btn-sm">Αποθήκευση</button>
+            <button type="button" class="btn btn-sm secondary cancelGrade">Άκυρο</button>
+            <small class="muted saveMsg"></small>
+          </div>
+        </form>
+      </div>
+    </div>
+  </section>
       `;
 
-      // --- Resources (drafts + links) ---
-      // --- Resources (drafts + links) ---
-async function renderResources() {
-  const draftBox = det.querySelector('#' + resDraftId);
-  const linkBox  = det.querySelector('#' + resLinksId);
-  if (draftBox) draftBox.textContent = 'Φόρτωση...';
-  if (linkBox)  linkBox.textContent  = 'Φόρτωση...';
-
-  // μικρο helpers για ανομοιόμορφα payloads
-  const pickUrl = (r) => r?.url ?? r?.url_or_path ?? r?.path ?? '';
-  const toHref  = (u) => u && u.startsWith('/uploads/') ? `${BASE}${u}` : u;  
-  const pickWhen = (r) => r?.created_at || '';
-  const pickFilename = (r) => {
-    if (r?.filename) return r.filename;
-    const u = pickUrl(r);
-    try { return u ? decodeURIComponent(u.split('/').pop() || 'draft') : 'draft'; }
-    catch { return u ? (u.split('/').pop() || 'draft') : 'draft'; }
-  };
-  const pickTitle = (r) => r?.title || pickUrl(r);
-
-  try {
-    // ζητάμε από το API ήδη φιλτραρισμένα κατά kind
-    const [draftsRes, linksRes] = await Promise.all([
-      fetchResources(tid, 'draft'),
-      fetchResources(tid, 'link'),
-    ]);
-
-    // normalize items arrays
-    const draftItems = (draftsRes?.data?.items ?? draftsRes?.items ?? []);
-    const linkItems  = (linksRes?.data?.items  ?? linksRes?.items  ?? []);
-
-    // Drafts (αρχεία φοιτητή)
-    // Drafts (αρχεία φοιτητή)
-if (draftBox) {
-  if (!draftItems.length) {
-    draftBox.innerHTML = '<em>Δεν έχει ανέβει draft ακόμη.</em>';
-  } else {
-    draftBox.innerHTML = draftItems.map(d => {
-      const url  = pickUrl(d);
-      const name = pickFilename(d);
-      const when = pickWhen(d);
-      const href = toHref(url); // αν έχεις helper που προσθέτει `${PUB}` για relative paths
-
-      return `
-        <div style="margin:.25rem 0">
-          ${href ? `<a href="${esc(href)}" target="_blank" rel="noopener">${esc(name)}</a>` : esc(name)}
-          <small class="muted"> · ${esc(when)}</small>
-        </div>
-      `;
-    }).join('');
-  }
-}
-
-
-    // Links (πόροι φοιτητή)
-    if (linkBox) {
-      if (!linkItems.length) {
-        linkBox.innerHTML = '<em>Δεν υπάρχουν σύνδεσμοι ακόμη.</em>';
-      } else {
-        linkBox.innerHTML = linkItems.map(l => {
-          const url = pickUrl(l);
-const href = toHref(url);
-return `
-  <div style="margin:.25rem 0">
-    ${href ? `<a href="${esc(href)}" target="_blank" rel="noopener">${esc(title)}</a>` : esc(title)}
-    <small class="muted"> · ${esc(when)}</small>
-  </div>
-`;
-        }).join('');
+      // --- Grades UI ---
+      const gradesBox = det.querySelector('#' + gradesBoxId);
+      if (gradesBox) {
+        if (status !== 'under_review') {
+          gradesBox.textContent = 'Η βαθμολόγηση είναι διαθέσιμη μόνο όταν η διπλωματική είναι «Υπό εξέταση».';
+        } else if (!gradingEnabled) {
+          if (isSupervisor) {
+            gradesBox.innerHTML = `
+              <div class="muted">Η βαθμολόγηση δεν είναι ενεργή. Ως επιβλέπων μπορείς να την ενεργοποιήσεις.</div>
+              <div style="margin-top:.5rem">
+                <button class="btn btn-sm enableGrading" data-thesis="${esc(tid)}">Ενεργοποίηση βαθμολόγησης</button>
+              </div>
+            `;
+          } else {
+            gradesBox.innerHTML = `<div class="muted">Η βαθμολόγηση δεν είναι ενεργή ακόμη. Θα ενεργοποιηθεί από τον επιβλέποντα.</div>`;
+          }
+        } else {
+          // ενεργή → φόρμα βαθμού για όλους
+          mountGradePanel(det, gradesBox, tid, isSupervisor);
+        }
       }
-    }
-  } catch {
-    if (draftBox) draftBox.textContent = 'Σφάλμα.';
-    if (linkBox)  linkBox.textContent  = 'Σφάλμα.';
-  }
-}
 
+      // Presentation
+      const presBox = det.querySelector('#' + presBoxId);
+      loadPresentation(tid, presBox);
+
+      // Resources
+      async function loadPresentation(thesisId, mountEl) {
+        function presentModeLabel(mode) {
+          if (mode === 'in_person') return 'Δια ζώσης';
+          if (mode === 'online') return 'Εξ αποστάσεως';
+          return mode || '—';
+        }
+        if (!mountEl) return;
+
+        const toDateLabel = (val) => {
+          if (!val) return '—';
+          const d = new Date(String(val).replace(' ', 'T'));
+          if (isNaN(d)) return String(val);
+          const pad = (n) => String(n).padStart(2, '0');
+          return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+        };
+        const modeLabel = (m) => {
+          const s = String(m || '').toLowerCase();
+          if (s.includes('online')) return 'Εξ αποστάσεως';
+          if (s.includes('hybrid')) return 'Υβριδική';
+          if (s.includes('person') || s.includes('ζώσης') || s.includes('ζωσης')) return 'Δια ζώσης';
+          return m || '—';
+        };
+
+        try {
+          mountEl.textContent = 'Φόρτωση...';
+
+          const url = new URL(`${BASE}/api/presentation/get.php`, location.origin);
+          url.searchParams.set('thesis_id', thesisId);
+
+          const res = await fetch(url, {
+            credentials: 'same-origin',
+            headers: { 'Accept': 'application/json' }
+          });
+
+          const txt = await res.text();
+          let j = null;
+          try { j = txt ? JSON.parse(txt) : null; } catch { j = null; }
+
+          if (!res.ok || !j || j.ok !== true) {
+            mountEl.innerHTML = '<em>Δεν έχει οριστεί παρουσίαση ακόμη.</em>';
+            return;
+          }
+
+          const raw = j.data || j.presentation || j;
+          const item = Array.isArray(raw?.items) ? raw.items[0] : raw;
+
+          if (!item || (!item.when_dt && !item.mode && !item.room_or_link)) {
+            mountEl.innerHTML = '<em>Δεν έχει οριστεί παρουσίαση ακόμη.</em>';
+            return;
+          }
+
+          const when  = item.when_dt    ?? item.when    ?? item.date_time ?? '';
+          const mode  = item.mode       ?? item.kind    ?? '';
+          const place = item.room_or_link ?? item.place ?? item.location ?? '';
+
+          const whenOut  = toDateLabel(when);
+          const modeOut  = modeLabel(mode);
+          const placeOut = place
+            ? (String(place).startsWith('http')
+                ? `<a href="${esc(place)}" target="_blank" rel="noopener">${esc(place)}</a>`
+                : esc(place))
+            : '—';
+
+          mountEl.classList.remove('muted');
+          mountEl.innerHTML = `
+            <div style="display:grid;gap:.25rem">
+              <div><b>Ημ/νία & ώρα:</b> ${esc(whenOut)}</div>
+              <div><b>Τρόπος:</b> ${esc(modeOut)}</div>
+              <div><b>Αίθουσα/Σύνδεσμος:</b> ${placeOut}</div>
+            </div>
+          `;
+        } catch (err) {
+          console.error('[loadPresentation]', err);
+          mountEl.innerHTML = '<span style="color:#ef4444">Σφάλμα φόρτωσης παρουσίασης.</span>';
+        }
+      }
+
+      async function renderResources() {
+        const draftBox = det.querySelector('#' + resDraftId);
+        const linkBox  = det.querySelector('#' + resLinksId);
+        if (draftBox) draftBox.textContent = 'Φόρτωση...';
+        if (linkBox)  linkBox.textContent  = 'Φόρτωση...';
+
+        const pickUrl   = (r) => r?.url ?? r?.url_or_path ?? r?.path ?? '';
+        const pickWhen  = (r) => r?.created_at || r?.uploaded_at || '';
+        const toHref    = (u) => (u && u.startsWith('/uploads/')) ? `${BASE}${u}` : u;
+        const pickName  = (r) => {
+          if (r?.filename) return String(r.filename);
+          const u = pickUrl(r);
+          if (!u) return 'resource';
+          try { return decodeURIComponent(u.split('/').pop() || 'resource'); }
+          catch { return u.split('/').pop() || 'resource'; }
+        };
+
+        try {
+          const [draftsRes, linksRes] = await Promise.all([
+            fetchResources(tid, 'draft'),
+            fetchResources(tid, 'link'),
+          ]);
+
+          const draftItems = (draftsRes?.data?.items ?? draftsRes?.items ?? []);
+          const linkItems  = (linksRes?.data?.items  ?? linksRes?.items  ?? []);
+
+          if (draftBox) {
+            if (!draftItems.length) {
+              draftBox.innerHTML = '<em>Δεν έχει ανέβει draft ακόμη.</em>';
+            } else {
+              draftBox.innerHTML = draftItems.map((d) => {
+                const url  = pickUrl(d);
+                const href = toHref(url);
+                const name = pickName(d);
+                const when = pickWhen(d);
+                return `
+                  <div style="margin:.25rem 0">
+                    ${href ? `<a href="${esc(href)}" target="_blank" rel="noopener">${esc(name)}</a>` : esc(name)}
+                    ${when ? `<small class="muted"> · ${esc(when)}</small>` : ''}
+                  </div>
+                `;
+              }).join('');
+            }
+          }
+
+          if (linkBox) {
+            if (!linkItems.length) {
+              linkBox.innerHTML = '<em>Δεν υπάρχουν σύνδεσμοι ακόμη.</em>';
+            } else {
+              linkBox.innerHTML = linkItems.map((l) => {
+                const url   = pickUrl(l);
+                const href  = toHref(url);
+                const title = l?.title || url || 'link';
+                const when  = pickWhen(l);
+                return `
+                  <div style="margin:.25rem 0">
+                    ${href ? `<a href="${esc(href)}" target="_blank" rel="noopener">${esc(title)}</a>` : esc(title)}
+                    ${when ? `<small class="muted"> · ${esc(when)}</small>` : ''}
+                  </div>
+                `;
+              }).join('');
+            }
+          }
+        } catch (err) {
+          console.error('renderResources failed:', err);
+          if (draftBox) draftBox.textContent = 'Σφάλμα.';
+          if (linkBox)  linkBox.textContent  = 'Σφάλμα.';
+        }
+      }
       renderResources();
 
       // --- Handlers ---
@@ -794,7 +1036,7 @@ return `
           return;
         }
 
-        // Ακύρωση για active (με Γ.Σ. – server ελέγχει 2ετία + ρόλο)
+        // Ακύρωση για active
         if (tbtn.classList.contains('cancelAssignment')) {
           const council_number = prompt('Αριθμός Γ.Σ.:'); if (council_number === null) return;
           const council_year   = prompt('Έτος Γ.Σ.:'   ); if (council_year   === null) return;
@@ -810,18 +1052,45 @@ return `
           return;
         }
 
-        // Ενεργοποίηση βαθμολόγησης
+        // Ενεργοποίηση βαθμολόγησης (μόνο supervisor το βλέπει, ο server ξανα-ελέγχει)
         if (tbtn.classList.contains('enableGrading')) {
           try {
-            await postForm(`${BASE}/api/grades/enable.php`, { thesis_id });
+            await postForm(`${BASE}/api/grades/enable.php`, { thesis_id, enabled: 1 });
             const g = det.querySelector('#' + `${gradesBoxId}`);
-            if (g) { g.classList.remove('muted'); g.textContent = 'Η βαθμολόγηση είναι ενεργή. Τα μέλη μπορούν να καταχωρήσουν βαθμούς.'; }
+            if (g) {
+              mountGradePanel(det, g, tid, true); // μετά το enable, δείξε απευθείας τη φόρμα
+            }
             alert('Η βαθμολόγηση ενεργοποιήθηκε.');
-          } catch (e) { alert(e.message || 'Σφάλμα.'); }
+          } catch (e) {
+            alert(e.message || 'Σφάλμα.');
+          }
           return;
         }
 
-        // Ανακοίνωση
+        // --- Άνοιγμα φόρμας βαθμού & prefill αν υπάρχει ---
+        if (tbtn.classList.contains('openGradeForm')) {
+          const wrap = det.querySelector('.gradeForm');
+          const form = det.querySelector('.gradeUpsertF');
+          if (!wrap || !form) return;
+          wrap.style.display = 'block';
+          try {
+            const g = await fetchMyGrade(thesis_id);
+            if (g) {
+              form.querySelector('[name="total"]').value = g.total ?? '';
+              const notesEl = form.querySelector('[name="notes"]');
+              if (notesEl) notesEl.value = g.notes ?? '';
+            }
+          } catch {}
+          return;
+        }
+
+        // --- Άκυρο φόρμας ---
+        if (tbtn.classList.contains('cancelGrade')) {
+          const wrap = det.querySelector('.gradeForm');
+          if (wrap) wrap.style.display = 'none';
+          return;
+        }
+
         if (tbtn.classList.contains('genAnnouncement')) {
           try {
             const rsp = await postForm(`${BASE}/api/presentation/announcement_preview.php`, { thesis_id });
@@ -885,7 +1154,6 @@ return `
     }
   });
 })();
-
 
 /* =========================
    Αποδοχή / Απόρριψη Προσκλήσεων

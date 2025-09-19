@@ -158,3 +158,42 @@ body.student .tabs button {
   border: 1px solid var(--b);
 }
 body.student .tabs .active { background: var(--acc); color: #111; }
+
+
+/* ========= Role theme: Secretariat ========= */
+body.secretariat {
+  --bg:   #0b1220;
+  --fg:   #e2e8f0;
+  --card: #111827;
+}
+
+body.secretariat .card {
+  background: var(--card);
+  color: var(--fg);
+  border: 1px solid #243244;
+}
+
+body.secretariat input,
+body.secretariat textarea,
+body.secretariat select {
+  background: #0b1220;
+  color: var(--fg);
+  border: 1px solid #243244;
+}
+
+/* helper for "card μέσα σε card" (λεπτομέρειες) */
+.card.inset {
+  background: #0b1220;
+  border: 1px solid #243244;
+}
+
+/* status badges */
+.badge.status-active        { background:#065f46; color:#e6fffa; }
+.badge.status-under_review  { background:#374151; color:#e5e7eb; }
+.badge.status-completed     { background:#1f2937; color:#e5e7eb; }
+.badge.status-canceled      { background:#7f1d1d; color:#fee2e2; }
+
+/* μικρά τυπογραφικά */
+[hidden] { display: none !important; }
+h2,h3,h4 { margin: 0 0 .6rem; }
+

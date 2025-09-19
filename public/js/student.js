@@ -572,6 +572,7 @@ function wireSchedule() {
   });
 }
 
+
 // Νημερτής
 function wireNimeritis() {
   const f = $('#nimeritisF');
