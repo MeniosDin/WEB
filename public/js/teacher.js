@@ -628,41 +628,48 @@ function presentModeLabel(mode) {
 
     // bind submit
 // μέσα στο bindThesisDetails(), εκεί που έχεις:
-// Submit βαθμού (create/update)
 const gradeForm = det.querySelector('.gradeUpsertF');
 if (gradeForm) {
-  gradeForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
+ gradeForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const saveMsg = gradeForm.querySelector('.saveMsg');
+  if (saveMsg) saveMsg.textContent = 'Αποθήκευση...';
 
-    const saveMsg = gradeForm.querySelector('.saveMsg');
-    if (saveMsg) saveMsg.textContent = 'Αποθήκευση...';
+  const data = Object.fromEntries(new FormData(gradeForm).entries());
 
-    // 1) Πάρε τα στοιχεία της φόρμας
-    const data = Object.fromEntries(new FormData(gradeForm).entries());
+  // 1) thesis_id από το container / dataset
+  const thesis_id = gradeForm.dataset.thesis || // π.χ. από το ίδιο το form
+                    det.closest('article[data-thesis]')?.dataset.thesis || // ή από το card
+                    null;
 
-    // 2) Στείλε πάντα το thesis_id από το data attribute της φόρμας
-    data.thesis_id = gradeForm.dataset.thesis;
+  if (!thesis_id) {
+    alert('Δεν βρέθηκε διπλωματική (thesis_id).');
+    if (saveMsg) saveMsg.textContent = 'Σφάλμα';
+    return;
+  }
 
-    // (προαιρετικά) κόψε τυχόν κενά
-    if (typeof data.total === 'string') data.total = data.total.trim();
+  data.thesis_id = thesis_id;
 
-    // 3) Μικρός έλεγχος στο client
-    if (!data.thesis_id || data.total === '' || data.total == null) {
-      if (saveMsg) saveMsg.textContent = '';
-      alert('Λείπει thesis_id ή total από τη φόρμα.');
-      return;
-    }
+  // 2) κριτήρια: στείλε έστω ένα κενό object για να ικανοποιήσεις το NOT NULL
+  if (!data.criteria_scores_json) {
+    data.criteria_scores_json = '{}';
+  }
 
-    try {
-      await postForm(`${BASE}/api/grades/upsert.php`, data);
-      if (saveMsg) saveMsg.textContent = 'Αποθηκεύτηκε ✔';
-    } catch (err) {
-      if (saveMsg) saveMsg.textContent = '';
-      alert(err.message || 'Σφάλμα.');
-    }
-  });
+  // 3) (προαιρετικό) rubric_id αν το έχεις κάπου διαθέσιμο
+  if (window.ACTIVE_RUBRIC_ID) {
+    data.rubric_id = window.ACTIVE_RUBRIC_ID;
+  }
+
+  try {
+    const res = await postForm('/thesis-web/api/grades/upsert.php', data);
+    if (saveMsg) saveMsg.textContent = 'Αποθηκεύτηκε ✔';
+  } catch (err) {
+    alert(err.message || 'Σφάλμα.');
+    if (saveMsg) saveMsg.textContent = 'Σφάλμα';
+  }
+});
+
 }
-
 
 
 
@@ -796,38 +803,99 @@ if (gradeForm) {
             <div id="${notesBoxId}" style="margin-top:.5rem">—</div>
           </section>
 
-          <!-- Grades -->
-            <section class="card" style="padding:.75rem;margin-top:1rem">
-    <h4 style="margin:.2rem 0">Βαθμολογία</h4>
-    <div id="${gradesBoxId}" class="muted">
-      <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
-        <button class="btn btn-sm outline openGradeForm" data-thesis="${esc(tid)}">Καταχώριση βαθμού</button>
-        <span class="muted hint">Ο καθένας βλέπει/ενημερώνει τον δικό του βαθμό.</span>
-      </div>
+                    <!-- Grades -->
+          <section class="card" style="padding:.75rem;margin-top:1rem">
+            <h4 style="margin:.2rem 0">Καταχώρηση Βαθμού</h4>
+            <form class="gradeForm" data-thesis="${esc(tid)}" style="display:grid;gap:.5rem;max-width:400px">
+              <div class="row" style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem">
+                <label>Στόχοι
+                  <input type="number" step="0.1" min="0" max="10" name="crit_goals">
+                </label>
+                <label>Διάρκεια
+                  <input type="number" step="0.1" min="0" max="10" name="crit_duration">
+                </label>
+                <label>Κείμενο
+                  <input type="number" step="0.1" min="0" max="10" name="crit_text">
+                </label>
+                <label>Παρουσίαση
+                  <input type="number" step="0.1" min="0" max="10" name="crit_presentation">
+                </label>
+              </div>
 
-      <div class="gradeForm" style="display:none;margin-top:.6rem;padding:.6rem;border:1px dashed #374151;border-radius:.6rem">
-        <form class="gradeUpsertF" style="display:grid;gap:.5rem;max-width:420px">
-          <!-- Δέσε το thesis_id σαν hidden input -->
-          <input type="hidden" name="thesis_id" value="${esc(tid)}" />
+              <label>Συνολικός (προαιρετικά)
+                <input type="number" step="0.1" min="0" max="10" name="total">
+              </label>
 
-          <label>Συνολικός βαθμός (0–10)
-            <input type="number" name="total" min="0" max="10" step="0.5" required />
-          </label>
+              <label>Σημειώσεις (προαιρετικό)
+                <textarea name="notes" rows="3" maxlength="500" placeholder="π.χ. παρατηρήσεις προς το πρακτικό"></textarea>
+              </label>
 
-          <label>Σημειώσεις (προαιρετικό)
-            <textarea name="notes" rows="3" maxlength="500" placeholder="π.χ. παρατηρήσεις προς το πρακτικό"></textarea>
-          </label>
+              <div style="display:flex;gap:.5rem;align-items:center">
+                <button class="btn btn-sm">Αποθήκευση</button>
+                <small class="muted saveMsg"></small>
+              </div>
+            </form>
+          </section>
 
-          <div style="display:flex;gap:.5rem;align-items:center">
-            <button class="btn btn-sm">Αποθήκευση</button>
-            <button type="button" class="btn btn-sm secondary cancelGrade">Άκυρο</button>
-            <small class="muted saveMsg"></small>
-          </div>
-        </form>
-      </div>
-    </div>
-  </section>
       `;
+      
+// Submit της inline φόρμας βαθμού
+const gradeFormEl = det.querySelector('form.gradeForm');
+if (gradeFormEl) {
+  gradeFormEl.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const saveMsg = gradeFormEl.querySelector('.saveMsg');
+    if (saveMsg) saveMsg.textContent = 'Αποθήκευση...';
+
+    const thesis_id = gradeFormEl.dataset.thesis ||
+                      det.closest('article[data-thesis]')?.dataset.thesis;
+    if (!thesis_id) {
+      alert('Δεν βρέθηκε διπλωματική (thesis_id).');
+      if (saveMsg) saveMsg.textContent = 'Σφάλμα';
+      return;
+    }
+
+    const fd = new FormData(gradeFormEl);
+    fd.append('thesis_id', thesis_id);
+
+    // Φτιάξε criteria_scores_json από τα πεδία των κριτηρίων
+    const crit = {};
+    ['crit_goals','crit_duration','crit_text','crit_presentation'].forEach(k => {
+      const v = parseFloat(fd.get(k));
+      if (!Number.isNaN(v)) crit[k.replace('crit_','')] = v;
+      fd.delete(k); // καθάρισε τα raw πεδία
+    });
+    if (Object.keys(crit).length) {
+      fd.append('criteria_scores_json', JSON.stringify(crit));
+    }
+
+    // Αν total είναι κενό, μην το στείλεις
+    const total = String(fd.get('total') ?? '').trim();
+    if (total === '') fd.delete('total');
+
+    // Προαιρετικό rubric_id από global
+    if (window.ACTIVE_RUBRIC_ID) fd.append('rubric_id', window.ACTIVE_RUBRIC_ID);
+
+    try {
+      const res = await fetch(`${BASE}/api/grades/upsert.php`, {
+        method: 'POST',
+        body: fd,
+        credentials: 'same-origin'
+      });
+      const j = await res.json().catch(()=>null);
+      if (!j || j.ok !== true) throw new Error(j?.error || 'Αποτυχία');
+
+      if (saveMsg) saveMsg.textContent = 'Καταχωρήθηκε ✔';
+      gradeFormEl.reset();
+      // Ανανέωση λίστας/καρτέλας (αν έχεις κουμπί ανανέωσης)
+      document.getElementById('btnThesisReload')?.click();
+    } catch (err) {
+      if (saveMsg) saveMsg.textContent = err.message || 'Σφάλμα.';
+      alert(err.message || 'Σφάλμα.');
+    }
+  });
+}
+
 
       // --- Grades UI ---
       const gradesBox = det.querySelector('#' + gradesBoxId);
