@@ -15,15 +15,17 @@ try {
     echo json_encode(['ok'=>false,'error'=>'thesis_id is required']); exit;
   }
 
-  $sql = "SELECT thesis_id, when_dt, mode, room_or_link, published_at
-          FROM presentations
-          WHERE thesis_id = ?
-          ORDER BY when_dt ASC";
-  $st = $pdo->prepare($sql);
-  $st->execute([$thesis_id]);
-  $rows = $st->fetchAll(PDO::FETCH_ASSOC);
 
-  echo json_encode(['ok'=>true, 'data'=>['items'=>$rows]]);
+$sql = "SELECT thesis_id, when_dt, mode, room_or_link, published_at
+        FROM presentations
+        WHERE thesis_id = ?
+        LIMIT 1";
+$st = $pdo->prepare($sql);
+$st->execute([$thesis_id]);
+$row = $st->fetch(PDO::FETCH_ASSOC);
+
+echo json_encode(['ok' => true, 'data' => ['item' => $row]]);
+
 } catch (Throwable $e) {
   http_response_code(500);
   echo json_encode(['ok'=>false,'error'=>'server error']);
