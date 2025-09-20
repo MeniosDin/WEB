@@ -322,7 +322,8 @@ async function loadPresentation(thesis_id) {
   const res = await apiGet(`/presentation/get.php?thesis_id=${encodeURIComponent(thesis_id)}`);
   if (!res?.ok) { box.textContent = res?.error || 'Σφάλμα'; return; }
 
-  const p = getItem(res);
+  // ✅ Fallback: αν το API γυρίσει items[], πάρε το πρώτο
+  const p = getItem(res) || (getItems(res)[0] ?? null);
   if (!p) { box.innerHTML = '<em>Δεν έχει προγραμματιστεί ακόμη παρουσίαση.</em>'; return; }
 
   const announcementLink = p.published_at
@@ -571,7 +572,6 @@ function wireSchedule() {
     refreshThesisExtras();
   });
 }
-
 
 // Νημερτής
 function wireNimeritis() {
